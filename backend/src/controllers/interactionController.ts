@@ -265,3 +265,213 @@ export const unlockAchievement = async (req: AuthRequest, res: Response) => {
     return res.status(500).json({ message: 'Failed to unlock achievement', error: error.message });
   }
 };
+
+export const getAchievements = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id: gameId } = req.params;
+    const userId = req.user?.id;
+
+    const achievements = await prisma.achievement.findMany({
+      where: { gameId },
+      orderBy: { xpValue: 'asc' }
+    });
+
+    if (userId) {
+      const unlocked = await prisma.userAchievement.findMany({
+        where: {
+          userId,
+          achievement: { gameId }
+        },
+        select: { achievementId: true }
+      });
+      const unlockedIds = new Set(unlocked.map(u => u.achievementId));
+      
+      const achievementsWithStatus = achievements.map(ach => ({
+        id: ach.id,
+        name: ach.name,
+        description: ach.description,
+        iconUrl: ach.iconUrl,
+        xpValue: ach.xpValue,
+        unlocked: unlockedIds.has(ach.id)
+      }));
+      return res.json({ achievements: achievementsWithStatus });
+    }
+
+    return res.json({ achievements: achievements.map(ach => ({ ...ach, unlocked: false })) });
+  } catch (error: any) {
+    return res.status(500).json({ message: 'Failed to fetch achievements', error: error.message });
+  }
+};
+
+export const unlockAchievementByName = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const { id: gameId } = req.params;
+    const { name } = req.body;
+    const userId = req.user.id;
+
+    if (!name) {
+      return res.status(400).json({ message: 'Achievement name is required' });
+    }
+
+    const achievement = await prisma.achievement.findFirst({
+      where: {
+        gameId,
+        name: { equals: name, mode: 'insensitive' }
+      }
+    });
+
+    if (!achievement) {
+      return res.status(404).json({ message: `Achievement '${name}' not found for this game` });
+    }
+
+    const existingUnlock = await prisma.userAchievement.findUnique({
+      where: {
+        userId_achievementId: { userId, achievementId: achievement.id }
+      }
+    });
+
+    if (existingUnlock) {
+      return res.status(200).json({ message: 'Achievement already unlocked', alreadyUnlocked: true });
+    }
+
+    const unlock = await prisma.userAchievement.create({
+      data: {
+        userId,
+        achievementId: achievement.id
+      }
+    });
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    let newLevel = 1;
+    let totalXp = 0;
+    if (user) {
+      totalXp = user.xp + achievement.xpValue;
+      newLevel = Math.floor(totalXp / 500) + 1;
+
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          xp: totalXp,
+          level: newLevel,
+          points: { increment: 50 }
+        }
+      });
+    }
+
+    return res.status(201).json({ 
+      message: `Achievement unlocked: ${achievement.name}!`, 
+      unlock, 
+      xpReward: achievement.xpValue,
+      newLevel,
+      totalXp,
+      alreadyUnlocked: false
+    });
+  } catch (error: any) {
+    return res.status(500).json({ message: 'Failed to unlock achievement', error: error.message });
+  }
+};
+
+export const submitScore = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const { id: gameId } = req.params;
+    const { score } = req.body;
+    const userId = req.user.id;
+
+    if (score === undefined || isNaN(score)) {
+      return res.status(400).json({ message: 'Valid numerical score is required' });
+    }
+
+    const parsedScore = parseFloat(score);
+
+    const existing = await prisma.leaderboardScore.findUnique({
+      where: {
+        gameId_userId: { gameId, userId }
+      }
+    });
+
+    let savedScore = parsedScore;
+    if (existing) {
+      if (parsedScore > existing.score) {
+        const updated = await prisma.leaderboardScore.update({
+          where: { id: existing.id },
+          data: { score: parsedScore }
+        });
+        savedScore = updated.score;
+      } else {
+        savedScore = existing.score;
+      }
+    } else {
+      await prisma.leaderboardScore.create({
+        data: {
+          gameId,
+          userId,
+          score: parsedScore
+        }
+      });
+    }
+
+    if (!existing || parsedScore > existing.score) {
+      const user = await prisma.user.findUnique({ where: { id: userId } });
+      if (user) {
+        const totalXp = user.xp + 20;
+        const newLevel = Math.floor(totalXp / 500) + 1;
+        await prisma.user.update({
+          where: { id: userId },
+          data: { xp: totalXp, level: newLevel }
+        });
+      }
+    }
+
+    return res.json({ 
+      message: 'Score submitted successfully!', 
+      personalBest: savedScore,
+      newRecord: !existing || parsedScore > existing.score
+    });
+  } catch (error: any) {
+    return res.status(500).json({ message: 'Failed to submit score', error: error.message });
+  }
+};
+
+export const getLeaderboard = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id: gameId } = req.params;
+
+    const scores = await prisma.leaderboardScore.findMany({
+      where: { gameId },
+      orderBy: { score: 'desc' },
+      take: 10,
+      include: {
+        user: {
+          select: {
+            username: true,
+            level: true,
+            profile: {
+              select: { avatarUrl: true }
+            }
+          }
+        }
+      }
+    });
+
+    const formattedScores = scores.map((s, index) => ({
+      rank: index + 1,
+      username: s.user.username,
+      level: s.user.level,
+      avatarUrl: s.user.profile?.avatarUrl,
+      score: s.score,
+      date: s.createdAt
+    }));
+
+    return res.json({ leaderboard: formattedScores });
+  } catch (error: any) {
+    return res.status(500).json({ message: 'Failed to fetch leaderboard', error: error.message });
+  }
+};

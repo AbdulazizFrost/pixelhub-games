@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
+import { useLocale } from '@/context/LocaleContext';
 import HeroBanner from '@/components/HeroBanner';
 import GameCard from '@/components/GameCard';
 import GlassPanel from '@/components/GlassPanel';
@@ -32,6 +33,7 @@ interface Category {
 
 export default function StoreFront() {
   const { apiUrl } = useAuth();
+  const { t } = useLocale();
   const [games, setGames] = useState<Game[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -110,7 +112,7 @@ export default function StoreFront() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-mutedText" />
           <input 
             type="text" 
-            placeholder="Search game, tags, genre..."
+            placeholder={t('searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full bg-black/40 border border-white/5 rounded-xl py-2.5 pl-10 pr-4 text-xs font-semibold text-gray-200 outline-none focus:border-primary/40 focus:shadow-[0_0_10px_rgba(0,240,255,0.1)] transition-all"
@@ -122,7 +124,7 @@ export default function StoreFront() {
           
           <div className="flex items-center gap-2 text-xs font-bold text-mutedText">
             <Filter className="w-4 h-4" />
-            Sort By:
+            {t('sortBy')}
           </div>
 
           <select 
@@ -130,9 +132,9 @@ export default function StoreFront() {
             onChange={(e) => setSortBy(e.target.value)}
             className="bg-surface-light border border-white/5 text-xs text-gray-200 font-semibold px-3 py-2 rounded-xl outline-none cursor-pointer focus:border-primary/30"
           >
-            <option value="new">New Releases</option>
-            <option value="plays">Popularity (Plays)</option>
-            <option value="rating">Top Rated</option>
+            <option value="new">{t('newReleases')}</option>
+            <option value="plays">{t('popularity')}</option>
+            <option value="rating">{t('topRated')}</option>
           </select>
 
         </div>
@@ -144,14 +146,14 @@ export default function StoreFront() {
         
         {/* Genre Categories Bar */}
         <div className="lg:col-span-1 flex flex-col gap-4">
-          <h3 className="font-extrabold text-sm uppercase tracking-wider text-mutedText">Genres</h3>
+          <h3 className="font-extrabold text-sm uppercase tracking-wider text-mutedText">{t('genres')}</h3>
           
           <div id="categories" className="flex flex-wrap lg:flex-col gap-2">
             <button
               onClick={() => setSelectedCategory('all')}
               className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${selectedCategory === 'all' ? 'bg-primary text-black shadow-neonBlue' : 'bg-surface border border-white/5 text-gray-300 hover:bg-white/5 hover:text-white'}`}
             >
-              All Genres
+              {t('allGenres')}
             </button>
             {categories.map((cat) => (
               <button
@@ -168,7 +170,7 @@ export default function StoreFront() {
           <GlassPanel className="mt-4 hidden lg:flex flex-col gap-4">
             <div className="flex items-center gap-2 border-b border-white/5 pb-2">
               <MessageSquare className="w-4 h-4 text-primary" />
-              <span className="text-xs font-bold text-gray-200">Community News</span>
+              <span className="text-xs font-bold text-gray-200">{t('communityNews')}</span>
             </div>
             
             <div className="flex flex-col gap-3">

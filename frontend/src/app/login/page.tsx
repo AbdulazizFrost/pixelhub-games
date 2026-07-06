@@ -4,12 +4,14 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { useLocale } from '@/context/LocaleContext';
 import GlassPanel from '@/components/GlassPanel';
 import { Gamepad2, Mail, Lock, LogIn, ArrowRight } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
   const { login, apiUrl } = useAuth();
+  const { t } = useLocale();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -52,9 +54,9 @@ export default function LoginPage() {
             <Gamepad2 className="w-8 h-8 text-black" />
           </div>
           <h2 className="text-2xl font-black tracking-wider text-glow-blue uppercase mt-2">
-            Welcome Back
+            {t('welcomeBack')}
           </h2>
-          <p className="text-xs text-mutedText">Log in to sync your level, achievements, and play stats.</p>
+          <p className="text-xs text-mutedText">{t('loginSubtitle')}</p>
         </div>
 
         {error && (
@@ -67,7 +69,7 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold text-gray-300">Email Address</label>
+            <label className="text-xs font-bold text-gray-300">{t('emailAddress')}</label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-mutedText" />
               <input 
@@ -82,7 +84,7 @@ export default function LoginPage() {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold text-gray-300">Password</label>
+            <label className="text-xs font-bold text-gray-300">{t('passwordLabel')}</label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-mutedText" />
               <input 
@@ -101,16 +103,16 @@ export default function LoginPage() {
             disabled={loading}
             className="flex items-center justify-center gap-2 w-full py-3 bg-gradient-to-r from-primary to-accent text-black font-extrabold text-sm rounded-xl hover:scale-[1.01] hover:brightness-110 transition-all shadow-neonBlue mt-2"
           >
-            {loading ? 'LOGGING IN...' : 'LOG IN'}
+            {loading ? t('loggingIn') : t('logIn')}
             <LogIn className="w-4 h-4" />
           </button>
 
         </form>
 
         <div className="flex justify-between items-center text-xs text-mutedText mt-2">
-          <span>New to PixelHub?</span>
+          <span>{t('newToPixelHub')}</span>
           <Link href="/register" className="flex items-center gap-1 text-primary font-bold hover:underline">
-            Create account
+            {t('createAccount')}
             <ArrowRight className="w-3 h-3" />
           </Link>
         </div>

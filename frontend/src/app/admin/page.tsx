@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { useLocale } from '@/context/LocaleContext';
 import GlassPanel from '@/components/GlassPanel';
 import { Shield, Users, Gamepad2, TrendingUp, Check, X, Trash2, ShieldCheck, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
@@ -38,6 +39,7 @@ interface AdminUser {
 export default function AdminDashboard() {
   const router = useRouter();
   const { user, apiUrl, authFetch } = useAuth();
+  const { t } = useLocale();
   
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [pendingGames, setPendingGames] = useState<PendingGame[]>([]);

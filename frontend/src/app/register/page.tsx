@@ -4,12 +4,14 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { useLocale } from '@/context/LocaleContext';
 import GlassPanel from '@/components/GlassPanel';
 import { Gamepad2, Mail, Lock, User, UserPlus, ArrowRight, Code } from 'lucide-react';
 
 export default function RegisterPage() {
   const router = useRouter();
   const { login, apiUrl } = useAuth();
+  const { t } = useLocale();
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -54,9 +56,9 @@ export default function RegisterPage() {
             <Gamepad2 className="w-8 h-8 text-black" />
           </div>
           <h2 className="text-2xl font-black tracking-wider text-glow-blue uppercase mt-2">
-            Create Account
+            {t('signUp')}
           </h2>
-          <p className="text-xs text-mutedText">Join a secure ecosystem of browser game developers & players.</p>
+          <p className="text-xs text-mutedText">{t('joinEcosystem')}</p>
         </div>
 
         {error && (
@@ -70,7 +72,7 @@ export default function RegisterPage() {
           
           {/* Role selector */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold text-gray-300">Account Type</label>
+            <label className="text-xs font-bold text-gray-300">{t('accountType')}</label>
             <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
@@ -78,7 +80,7 @@ export default function RegisterPage() {
                 className={`flex items-center justify-center gap-2 py-2.5 rounded-xl border text-xs font-bold transition-all ${role === 'USER' ? 'border-primary bg-primary/10 text-primary shadow-[0_0_10px_rgba(0,240,255,0.1)]' : 'border-white/5 bg-black/40 text-mutedText hover:text-white'}`}
               >
                 <User className="w-4 h-4" />
-                Player
+                {t('player')}
               </button>
               <button
                 type="button"
@@ -86,13 +88,13 @@ export default function RegisterPage() {
                 className={`flex items-center justify-center gap-2 py-2.5 rounded-xl border text-xs font-bold transition-all ${role === 'DEVELOPER' ? 'border-primary bg-primary/10 text-primary shadow-[0_0_10px_rgba(0,240,255,0.1)]' : 'border-white/5 bg-black/40 text-mutedText hover:text-white'}`}
               >
                 <Code className="w-4 h-4" />
-                Developer
+                {t('developer')}
               </button>
             </div>
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold text-gray-300">Username</label>
+            <label className="text-xs font-bold text-gray-300">{t('usernameLabel')}</label>
             <div className="relative">
               <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-mutedText" />
               <input 
@@ -107,7 +109,7 @@ export default function RegisterPage() {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold text-gray-300">Email Address</label>
+            <label className="text-xs font-bold text-gray-300">{t('emailAddress')}</label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-mutedText" />
               <input 
@@ -122,7 +124,7 @@ export default function RegisterPage() {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold text-gray-300">Password</label>
+            <label className="text-xs font-bold text-gray-300">{t('passwordLabel')}</label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-mutedText" />
               <input 
@@ -141,16 +143,16 @@ export default function RegisterPage() {
             disabled={loading}
             className="flex items-center justify-center gap-2 w-full py-3 bg-gradient-to-r from-primary to-accent text-black font-extrabold text-sm rounded-xl hover:scale-[1.01] hover:brightness-110 transition-all shadow-neonBlue mt-2"
           >
-            {loading ? 'CREATING...' : 'CREATE ACCOUNT'}
+            {loading ? t('creatingAccount') : t('createAccount').toUpperCase()}
             <UserPlus className="w-4 h-4" />
           </button>
 
         </form>
 
         <div className="flex justify-between items-center text-xs text-mutedText mt-2">
-          <span>Already have an account?</span>
+          <span>{t('alreadyHaveAccount')}</span>
           <Link href="/login" className="flex items-center gap-1 text-primary font-bold hover:underline">
-            Log in here
+            {t('logInHere')}
             <ArrowRight className="w-3 h-3" />
           </Link>
         </div>

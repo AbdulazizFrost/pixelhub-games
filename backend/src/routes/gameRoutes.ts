@@ -12,6 +12,8 @@ const uploadFields = upload.fields([
   { name: 'zipFile', maxCount: 1 }
 ]);
 
+import { addReview, toggleLike, addComment, getComments, getAchievements, unlockAchievementByName, submitScore, getLeaderboard, createAchievement } from '../controllers/interactionController';
+
 router.get('/', getGames);
 router.get('/categories', getCategories);
 router.get('/:slug', getGameBySlug);
@@ -20,5 +22,18 @@ router.put('/:id', authenticate, authorize(['DEVELOPER', 'ADMIN']), uploadFields
 router.post('/:id/version', authenticate, authorize(['DEVELOPER', 'ADMIN']), uploadFields, uploadNewVersion);
 router.post('/:id/play', incrementPlays); // public endpoint to increment play count, authenticated user updates play history inside
 router.delete('/:id', authenticate, authorize(['DEVELOPER', 'ADMIN']), deleteGame);
+
+// Nested interactions routes matching frontend fetch patterns
+router.post('/:id/reviews', authenticate, addReview);
+router.post('/:id/like', authenticate, toggleLike);
+router.post('/:id/comments', authenticate, addComment);
+router.get('/:id/comments', getComments);
+
+// Nested achievements and leaderboard routes
+router.get('/:id/achievements', getAchievements);
+router.post('/:id/achievements', authenticate, authorize(['DEVELOPER', 'ADMIN']), createAchievement);
+router.post('/:id/achievements/unlock', authenticate, unlockAchievementByName);
+router.post('/:id/leaderboard', authenticate, submitScore);
+router.get('/:id/leaderboard', getLeaderboard);
 
 export default router;

@@ -4,9 +4,10 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { useLocale } from '@/context/LocaleContext';
 import GlassPanel from '@/components/GlassPanel';
 import GameCard from '@/components/GameCard';
-import { Play, Star, Calendar, Download, ShieldCheck, Heart, User, CheckCircle2, ChevronRight } from 'lucide-react';
+import { Play, Star, Calendar, Download, ShieldCheck, Heart, User, CheckCircle2, ChevronRight, Lock, Unlock, Award, Trophy } from 'lucide-react';
 
 interface GameMedia {
   id: string;
@@ -74,6 +75,7 @@ export default function GameDetailsPage({ params }: { params: { slug: string } }
   const router = useRouter();
   const { slug } = params;
   const { apiUrl, user, authFetch } = useAuth();
+  const { t } = useLocale();
   
   const [game, setGame] = useState<GameDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -87,6 +89,11 @@ export default function GameDetailsPage({ params }: { params: { slug: string } }
   
   // Gallery active index
   const [activeMediaIndex, setActiveMediaIndex] = useState(0);
+
+  // Roadmap States
+  const [achievements, setAchievements] = useState<Array<Achievement & { unlocked: boolean }>>([]);
+  const [leaderboard, setLeaderboard] = useState<Array<{ rank: number; username: string; score: number; level: number; avatarUrl: string }>>([]);
+  const [activeTab, setActiveTab] = useState<'about' | 'achievements' | 'leaderboard'>('about');
 
   useEffect(() => {
     async function loadGameDetails() {
@@ -114,6 +121,32 @@ export default function GameDetailsPage({ params }: { params: { slug: string } }
     }
     loadGameDetails();
   }, [slug, apiUrl, user]);
+
+  useEffect(() => {
+    if (!game) return;
+    const gameId = game.id;
+
+    async function loadInteractions() {
+      try {
+        const achRes = user 
+          ? await authFetch(`/games/${gameId}/achievements`)
+          : await fetch(`${apiUrl}/games/${gameId}/achievements`);
+        if (achRes.ok) {
+          const data = await achRes.json();
+          setAchievements(data.achievements);
+        }
+
+        const leadRes = await fetch(`${apiUrl}/games/${gameId}/leaderboard`);
+        if (leadRes.ok) {
+          const data = await leadRes.json();
+          setLeaderboard(data.leaderboard);
+        }
+      } catch (err) {
+        console.error("Failed to load achievements or leaderboard:", err);
+      }
+    }
+    loadInteractions();
+  }, [game, user, apiUrl]);
 
   const handleLike = async () => {
     if (!user) {
@@ -289,131 +322,243 @@ export default function GameDetailsPage({ params }: { params: { slug: string } }
             </GlassPanel>
           )}
 
-          {/* Description */}
-          <GlassPanel className="flex flex-col gap-3">
-            <h3 className="font-extrabold text-sm uppercase tracking-wider text-mutedText">About the Game</h3>
-            <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">{game.description}</p>
-          </GlassPanel>
+          {/* Interactive Tabs Menu */}
+          <div className="flex gap-2 border-b border-white/5 pb-2 mb-2">
+            <button 
+              onClick={() => setActiveTab('about')}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === 'about' ? 'bg-primary text-black shadow-neonBlue' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+            >
+              {t('description')} & {t('reviews')}
+            </button>
+            <button 
+              onClick={() => setActiveTab('achievements')}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === 'achievements' ? 'bg-primary text-black shadow-neonBlue' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+            >
+              {t('achievements')} ({achievements.length})
+            </button>
+            <button 
+              onClick={() => setActiveTab('leaderboard')}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === 'leaderboard' ? 'bg-primary text-black shadow-neonBlue' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+            >
+              {t('leaderboard')} ({leaderboard.length})
+            </button>
+          </div>
 
-          {/* Achievements system showcase */}
-          {game.achievements && game.achievements.length > 0 && (
-            <GlassPanel className="flex flex-col gap-4">
-              <h3 className="font-extrabold text-sm uppercase tracking-wider text-mutedText">Platform Trophies ({game.achievements.length})</h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {game.achievements.map((ach) => (
-                  <div key={ach.id} className="flex items-center gap-3 p-3 rounded-lg bg-black/40 border border-white/5">
-                    <img src={ach.iconUrl} alt="ach icon" className="w-10 h-10 object-cover rounded-md border border-white/10" />
-                    <div>
-                      <h4 className="text-xs font-extrabold text-gray-200">{ach.name}</h4>
-                      <p className="text-[10px] text-mutedText mt-0.5">{ach.description}</p>
-                      <span className="text-[9px] font-bold text-primary mt-1 inline-block">+{ach.xpValue} XP</span>
-                    </div>
-                  </div>
-                ))}
+          {/* Tab 1: About & Reviews */}
+          {activeTab === 'about' && (
+            <>
+              {/* Description */}
+              <GlassPanel className="flex flex-col gap-3">
+                <h3 className="font-extrabold text-sm uppercase tracking-wider text-mutedText">About the Game</h3>
+                <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">{game.description}</p>
+              </GlassPanel>
+
+              {/* Customer Reviews Section */}
+              <div className="flex flex-col gap-4">
+                <h3 className="font-extrabold text-sm uppercase tracking-wider text-mutedText">Player Feedback</h3>
+
+                {/* Write feedback form */}
+                {user ? (
+                  <GlassPanel className="flex flex-col gap-4">
+                    <h4 className="text-xs font-bold text-gray-300">Submit Your Review</h4>
+                    
+                    {reviewSuccess && (
+                      <div className="p-3 rounded-lg border border-neonGreen/20 bg-neonGreen/10 text-xs text-neonGreen font-semibold flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4" />
+                        Review submitted successfully! XP awarded.
+                      </div>
+                    )}
+                    
+                    {reviewError && (
+                      <div className="p-3 rounded-lg border border-red-500/20 bg-red-500/10 text-xs text-red-400 font-semibold">
+                        {reviewError}
+                      </div>
+                    )}
+
+                    <form onSubmit={handleReviewSubmit} className="flex flex-col gap-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-semibold text-gray-300">Rating:</span>
+                        <select 
+                          value={rating} 
+                          onChange={(e) => setRating(parseInt(e.target.value))}
+                          className="bg-surface-light border border-white/5 rounded px-2.5 py-1 text-xs text-yellow-400 font-bold outline-none"
+                        >
+                          <option value="5">★★★★★ (5 - Masterpiece)</option>
+                          <option value="4">★★★★☆ (4 - Great)</option>
+                          <option value="3">★★★☆☆ (3 - Average)</option>
+                          <option value="2">★★☆☆☆ (2 - Poor)</option>
+                          <option value="1">★☆☆☆☆ (1 - Terrible)</option>
+                        </select>
+                      </div>
+
+                      <textarea 
+                        rows={4} 
+                        required
+                        value={reviewText}
+                        onChange={(e) => setReviewText(e.target.value)}
+                        placeholder="Provide detailed feedback on game mechanics, responsive controllers, graphics..."
+                        className="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-xs font-semibold text-gray-200 outline-none focus:border-primary/40"
+                      />
+
+                      <button 
+                        type="submit" 
+                        className="self-end px-5 py-2 bg-gradient-to-r from-primary to-accent text-black font-extrabold text-xs rounded-lg hover:brightness-110 shadow-neonBlue"
+                      >
+                        Submit Review
+                      </button>
+                    </form>
+                  </GlassPanel>
+                ) : (
+                  <GlassPanel className="text-center py-4 bg-white/2">
+                    <span className="text-xs text-mutedText">
+                      You must <Link href="/login" className="text-primary font-bold hover:underline">Log In</Link> to write a customer review.
+                    </span>
+                  </GlassPanel>
+                )}
+
+                {/* List of Reviews */}
+                <div className="flex flex-col gap-4">
+                  {game.reviews.length === 0 ? (
+                    <GlassPanel className="text-center py-10">
+                      <span className="text-xs text-mutedText">No player reviews submitted yet. Be the first!</span>
+                    </GlassPanel>
+                  ) : (
+                    game.reviews.map((rev) => (
+                      <GlassPanel key={rev.id} className="flex gap-4 items-start bg-[#0e121a]/50">
+                        <img 
+                          src={rev.user.profile?.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${rev.user.username}`} 
+                          alt="avatar" 
+                          className="w-8 h-8 rounded bg-black/40 border border-white/5"
+                        />
+                        <div className="flex-grow">
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs font-bold text-gray-200">{rev.user.username}</span>
+                            <div className="flex gap-0.5 text-yellow-400 text-xs">
+                              {Array.from({ length: rev.rating }).map((_, idx) => (
+                                <Star key={idx} className="w-3.5 h-3.5 fill-yellow-400" />
+                              ))}
+                            </div>
+                          </div>
+                          
+                          <span className="text-[10px] text-mutedText">
+                            {new Date(rev.createdAt).toLocaleDateString()}
+                          </span>
+                          
+                          <p className="text-xs text-gray-300 mt-2 leading-relaxed whitespace-pre-wrap">{rev.text}</p>
+                        </div>
+                      </GlassPanel>
+                    ))
+                  )}
+                </div>
+
               </div>
+            </>
+          )}
+
+          {/* Tab 2: Achievements */}
+          {activeTab === 'achievements' && (
+            <GlassPanel className="flex flex-col gap-4">
+              <h3 className="font-extrabold text-sm uppercase tracking-wider text-white flex items-center gap-2">
+                <Award className="w-5 h-5 text-yellow-500" />
+                {t('achievements')} ({achievements.length})
+              </h3>
+              {achievements.length === 0 ? (
+                <div className="text-center py-10 text-xs text-mutedText">
+                  {t('noAchievements')}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {achievements.map((ach) => (
+                    <div 
+                      key={ach.id} 
+                      className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${ach.unlocked ? 'bg-primary/5 border-primary/20 shadow-[0_0_15px_rgba(0,240,255,0.05)]' : 'bg-black/40 border-white/5 opacity-50'}`}
+                    >
+                      <div className="relative">
+                        <img src={ach.iconUrl} alt="ach icon" className="w-12 h-12 object-cover rounded-md border border-white/10" />
+                        <div className="absolute -top-1.5 -right-1.5 p-0.5 rounded-full bg-[#080b10] border border-white/10">
+                          {ach.unlocked ? (
+                            <Unlock className="w-3.5 h-3.5 text-primary" />
+                          ) : (
+                            <Lock className="w-3.5 h-3.5 text-mutedText" />
+                          )}
+                        </div>
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-extrabold text-gray-200">{ach.name}</h4>
+                        <p className="text-[10px] text-mutedText mt-0.5">{ach.description}</p>
+                        <span className="text-[9px] font-bold text-primary mt-1 inline-block">+{ach.xpValue} XP</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </GlassPanel>
           )}
 
-          {/* Customer Reviews Section */}
-          <div className="flex flex-col gap-4">
-            <h3 className="font-extrabold text-sm uppercase tracking-wider text-mutedText">Player Feedback</h3>
-
-            {/* Write feedback form */}
-            {user ? (
-              <GlassPanel className="flex flex-col gap-4">
-                <h4 className="text-xs font-bold text-gray-300">Submit Your Review</h4>
-                
-                {reviewSuccess && (
-                  <div className="p-3 rounded-lg border border-neonGreen/20 bg-neonGreen/10 text-xs text-neonGreen font-semibold flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4" />
-                    Review submitted successfully! XP awarded.
-                  </div>
-                )}
-                
-                {reviewError && (
-                  <div className="p-3 rounded-lg border border-red-500/20 bg-red-500/10 text-xs text-red-400 font-semibold">
-                    {reviewError}
-                  </div>
-                )}
-
-                <form onSubmit={handleReviewSubmit} className="flex flex-col gap-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-gray-300">Rating:</span>
-                    <select 
-                      value={rating} 
-                      onChange={(e) => setRating(parseInt(e.target.value))}
-                      className="bg-surface-light border border-white/5 rounded px-2.5 py-1 text-xs text-yellow-400 font-bold outline-none"
-                    >
-                      <option value="5">★★★★★ (5 - Masterpiece)</option>
-                      <option value="4">★★★★☆ (4 - Great)</option>
-                      <option value="3">★★★☆☆ (3 - Average)</option>
-                      <option value="2">★★☆☆☆ (2 - Poor)</option>
-                      <option value="1">★☆☆☆☆ (1 - Terrible)</option>
-                    </select>
-                  </div>
-
-                  <textarea 
-                    rows={4} 
-                    required
-                    value={reviewText}
-                    onChange={(e) => setReviewText(e.target.value)}
-                    placeholder="Provide detailed feedback on game mechanics, responsive controllers, graphics..."
-                    className="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-xs font-semibold text-gray-200 outline-none focus:border-primary/40"
-                  />
-
-                  <button 
-                    type="submit" 
-                    className="self-end px-5 py-2 bg-gradient-to-r from-primary to-accent text-black font-extrabold text-xs rounded-lg hover:brightness-110 shadow-neonBlue"
-                  >
-                    Submit Review
-                  </button>
-                </form>
-              </GlassPanel>
-            ) : (
-              <GlassPanel className="text-center py-4 bg-white/2">
-                <span className="text-xs text-mutedText">
-                  You must <Link href="/login" className="text-primary font-bold hover:underline">Log In</Link> to write a customer review.
-                </span>
-              </GlassPanel>
-            )}
-
-            {/* List of Reviews */}
-            <div className="flex flex-col gap-4">
-              {game.reviews.length === 0 ? (
-                <GlassPanel className="text-center py-10">
-                  <span className="text-xs text-mutedText">No player reviews submitted yet. Be the first!</span>
-                </GlassPanel>
+          {/* Tab 3: Leaderboard */}
+          {activeTab === 'leaderboard' && (
+            <GlassPanel className="flex flex-col gap-4">
+              <h3 className="font-extrabold text-sm uppercase tracking-wider text-white flex items-center gap-2">
+                <Trophy className="w-5 h-5 text-yellow-500" />
+                {t('leaderboard')}
+              </h3>
+              {leaderboard.length === 0 ? (
+                <div className="text-center py-10 text-xs text-mutedText">
+                  {t('noScores')}
+                </div>
               ) : (
-                game.reviews.map((rev) => (
-                  <GlassPanel key={rev.id} className="flex gap-4 items-start bg-[#0e121a]/50">
-                    <img 
-                      src={rev.user.profile?.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${rev.user.username}`} 
-                      alt="avatar" 
-                      className="w-8 h-8 rounded bg-black/40 border border-white/5"
-                    />
-                    <div className="flex-grow">
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs font-bold text-gray-200">{rev.user.username}</span>
-                        <div className="flex gap-0.5 text-yellow-400 text-xs">
-                          {Array.from({ length: rev.rating }).map((_, idx) => (
-                            <Star key={idx} className="w-3.5 h-3.5 fill-yellow-400" />
-                          ))}
-                        </div>
-                      </div>
-                      
-                      <span className="text-[10px] text-mutedText">
-                        {new Date(rev.createdAt).toLocaleDateString()}
-                      </span>
-                      
-                      <p className="text-xs text-gray-300 mt-2 leading-relaxed whitespace-pre-wrap">{rev.text}</p>
-                    </div>
-                  </GlassPanel>
-                ))
+                <div className="w-full overflow-hidden border border-white/5 rounded-xl bg-black/40">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-white/5 bg-white/2 text-[10px] uppercase font-bold tracking-wider text-mutedText">
+                        <th className="py-3 px-4">Rank</th>
+                        <th className="py-3 px-4">Player</th>
+                        <th className="py-3 px-4">Level</th>
+                        <th className="py-3 px-4 text-right">Score</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {leaderboard.map((scoreItem, idx) => {
+                        let rankStyle = "text-gray-400";
+                        let rankName = `${idx + 1}`;
+                        if (idx === 0) {
+                          rankStyle = "text-yellow-400 font-black shadow-glow";
+                          rankName = "🥇 1st";
+                        } else if (idx === 1) {
+                          rankStyle = "text-gray-300 font-black";
+                          rankName = "🥈 2nd";
+                        } else if (idx === 2) {
+                          rankStyle = "text-orange-400 font-black";
+                          rankName = "🥉 3rd";
+                        }
+                        return (
+                          <tr key={idx} className="border-b border-white/5 hover:bg-white/2 transition-colors">
+                            <td className="py-3 px-4 text-xs font-bold">
+                              <span className={rankStyle}>{rankName}</span>
+                            </td>
+                            <td className="py-3 px-4 flex items-center gap-2">
+                              <img 
+                                src={scoreItem.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${scoreItem.username}`} 
+                                alt="avatar" 
+                                className="w-6 h-6 rounded bg-black/40"
+                              />
+                              <span className="text-xs font-bold text-gray-200">{scoreItem.username}</span>
+                            </td>
+                            <td className="py-3 px-4 text-xs text-mutedText">
+                              {scoreItem.level}
+                            </td>
+                            <td className="py-3 px-4 text-xs font-extrabold text-primary text-right">
+                              {scoreItem.score.toLocaleString()}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               )}
-            </div>
-
-          </div>
+            </GlassPanel>
+          )}
 
         </div>
 

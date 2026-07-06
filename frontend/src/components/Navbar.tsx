@@ -3,11 +3,13 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
-import { Gamepad2, LogOut, User, LayoutDashboard, Shield, ChevronDown, Menu, X, PlusCircle } from 'lucide-react';
+import { useLocale } from '@/context/LocaleContext';
+import { Gamepad2, LogOut, User, LayoutDashboard, Shield, ChevronDown, Menu, X, PlusCircle, Globe } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
+  const { lang, setLang, t } = useLocale();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -23,32 +25,49 @@ export default function Navbar() {
             <Gamepad2 className="w-6 h-6 text-black" />
           </div>
           <span className="font-extrabold tracking-widest text-lg text-transparent bg-clip-text bg-gradient-to-r from-primary via-blue-400 to-secondary text-glow-blue">
-            PixelHub
+            {t('logo')}
           </span>
         </Link>
 
         {/* Desktop Main Links */}
         <div className="hidden md:flex items-center gap-6">
           <Link href="/" className="text-sm font-semibold text-gray-300 hover:text-primary transition-colors">
-            Store
+            {t('store')}
           </Link>
           <Link href="/#categories" className="text-sm font-semibold text-gray-300 hover:text-primary transition-colors">
-            Categories
+            {t('categories')}
           </Link>
           <Link href="/#faq" className="text-sm font-semibold text-gray-300 hover:text-primary transition-colors">
-            FAQ
+            {t('faq')}
           </Link>
         </div>
 
         {/* Desktop Auth Controls */}
         <div className="hidden md:flex items-center gap-4">
+          
+          {/* Language Switcher */}
+          <div className="flex items-center bg-black/40 border border-white/5 rounded-xl p-0.5 gap-0.5 mr-2">
+            <button 
+              onClick={() => setLang('ru')}
+              className={`px-2 py-1 rounded-lg text-[10px] font-black transition-all ${lang === 'ru' ? 'bg-primary text-black shadow-neonBlue' : 'text-gray-400 hover:text-white'}`}
+            >
+              RU
+            </button>
+            <button 
+              onClick={() => setLang('en')}
+              className={`px-2 py-1 rounded-lg text-[10px] font-black transition-all ${lang === 'en' ? 'bg-primary text-black shadow-neonBlue' : 'text-gray-400 hover:text-white'}`}
+            >
+              EN
+            </button>
+          </div>
+
           {user ? (
             <div className="flex items-center gap-4">
               
               {/* User Levels System Display */}
               <div className="flex flex-col items-end gap-0.5">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] uppercase font-bold tracking-wider text-mutedText">Level</span>
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-mutedText">{t('level')}</span>
                   <span className="text-xs font-black text-primary border border-primary/40 rounded px-1.5 py-0.2 shadow-neonBlue bg-primary/5">
                     {user.level}
                   </span>
@@ -69,7 +88,7 @@ export default function Navbar() {
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-primary/20 bg-primary/5 text-xs text-primary font-bold hover:bg-primary/20 transition-all hover:shadow-[0_0_15px_rgba(0,240,255,0.2)]"
                 >
                   <LayoutDashboard className="w-3.5 h-3.5" />
-                  Dev Hub
+                  {t('developerHub')}
                 </Link>
               )}
 
@@ -80,7 +99,7 @@ export default function Navbar() {
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-secondary/20 bg-secondary/5 text-xs text-secondary font-bold hover:bg-secondary/20 transition-all hover:shadow-[0_0_15px_rgba(255,0,127,0.2)]"
                 >
                   <Shield className="w-3.5 h-3.5" />
-                  Admin
+                  {t('adminPanel')}
                 </Link>
               )}
 
@@ -93,10 +112,9 @@ export default function Navbar() {
                   <img 
                     src={user.profile?.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${user.username}`} 
                     alt="avatar" 
-                    className="w-7 h-7 rounded-md bg-black/40"
+                    className="w-7 h-7 rounded-md bg-black/40 border border-white/10"
                   />
-                  <span className="text-xs font-semibold text-gray-200">{user.username}</span>
-                  <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
+                  <ChevronDown className="w-4 h-4 text-mutedText" />
                 </button>
 
                 <AnimatePresence>
@@ -115,7 +133,7 @@ export default function Navbar() {
                           className="flex items-center gap-2 w-full p-2.5 rounded-lg text-xs font-semibold text-gray-300 hover:text-primary hover:bg-white/5 transition-all"
                         >
                           <User className="w-4 h-4" />
-                          My Profile
+                          {t('myProfile')}
                         </Link>
                         
                         {(user.role === 'DEVELOPER' || user.role === 'ADMIN') && (
@@ -125,7 +143,7 @@ export default function Navbar() {
                             className="flex items-center gap-2 w-full p-2.5 rounded-lg text-xs font-semibold text-gray-300 hover:text-primary hover:bg-white/5 transition-all"
                           >
                             <PlusCircle className="w-4 h-4" />
-                            Upload Game
+                            {t('publishBuild')}
                           </Link>
                         )}
 
@@ -136,7 +154,7 @@ export default function Navbar() {
                           className="flex items-center gap-2 w-full p-2.5 rounded-lg text-xs font-semibold text-secondary hover:bg-secondary/10 transition-all text-left"
                         >
                           <LogOut className="w-4 h-4" />
-                          Sign Out
+                          {t('signOut')}
                         </button>
                       </motion.div>
                     </>
@@ -151,13 +169,13 @@ export default function Navbar() {
                 href="/login" 
                 className="text-xs font-bold text-gray-300 hover:text-primary transition-colors px-4 py-2"
               >
-                Log In
+                {t('logIn')}
               </Link>
               <Link 
                 href="/register" 
                 className="text-xs font-bold text-black bg-gradient-to-r from-primary to-accent rounded-lg px-4 py-2 shadow-neonBlue hover:brightness-110 hover:scale-[1.02] transition-all"
               >
-                Sign Up
+                {t('signUp')}
               </Link>
             </div>
           )}
@@ -180,21 +198,45 @@ export default function Navbar() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="md:hidden mt-3 border-t border-white/5 pt-3 flex flex-col gap-3"
+            className="md:hidden w-full border-t border-white/5 bg-[#080b10] flex flex-col gap-4 py-4 px-2 mt-2"
           >
+            
+            {/* Language Switcher in Mobile Drawer */}
+            <div className="flex items-center justify-between px-2">
+              <span className="text-xs font-bold text-mutedText flex items-center gap-1.5">
+                <Globe className="w-3.5 h-3.5" /> Language
+              </span>
+              <div className="flex items-center bg-black/40 border border-white/5 rounded-xl p-0.5 gap-0.5">
+                <button 
+                  onClick={() => setLang('ru')}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${lang === 'ru' ? 'bg-primary text-black shadow-neonBlue' : 'text-gray-400'}`}
+                >
+                  RU
+                </button>
+                <button 
+                  onClick={() => setLang('en')}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${lang === 'en' ? 'bg-primary text-black shadow-neonBlue' : 'text-gray-400'}`}
+                >
+                  EN
+                </button>
+              </div>
+            </div>
+
+            <hr className="border-white/5 my-0.5" />
+
             <Link 
               href="/" 
               onClick={() => setMobileMenuOpen(false)}
               className="text-sm py-1.5 text-gray-300 hover:text-primary transition-colors"
             >
-              Store
+              {t('store')}
             </Link>
             <Link 
               href="/#categories" 
               onClick={() => setMobileMenuOpen(false)}
               className="text-sm py-1.5 text-gray-300 hover:text-primary transition-colors"
             >
-              Categories
+              {t('categories')}
             </Link>
             
             {user ? (
@@ -207,7 +249,7 @@ export default function Navbar() {
                   />
                   <div className="flex flex-col">
                     <span className="text-sm font-semibold text-gray-200">{user.username}</span>
-                    <span className="text-xs text-primary">Level {user.level}</span>
+                    <span className="text-xs text-primary">{t('level')} {user.level}</span>
                   </div>
                 </div>
 
@@ -216,7 +258,7 @@ export default function Navbar() {
                   onClick={() => setMobileMenuOpen(false)}
                   className="text-sm py-1 text-gray-300 hover:text-primary"
                 >
-                  My Profile
+                  {t('myProfile')}
                 </Link>
 
                 {(user.role === 'DEVELOPER' || user.role === 'ADMIN') && (
@@ -225,7 +267,7 @@ export default function Navbar() {
                     onClick={() => setMobileMenuOpen(false)}
                     className="text-sm py-1 text-gray-300 hover:text-primary"
                   >
-                    Developer Hub
+                    {t('developerHub')}
                   </Link>
                 )}
 
@@ -235,7 +277,7 @@ export default function Navbar() {
                     onClick={() => setMobileMenuOpen(false)}
                     className="text-sm py-1 text-gray-300 hover:text-secondary"
                   >
-                    Admin Panel
+                    {t('adminPanel')}
                   </Link>
                 )}
 
@@ -244,7 +286,7 @@ export default function Navbar() {
                   className="flex items-center gap-2 text-sm py-2 text-secondary font-bold text-left"
                 >
                   <LogOut className="w-4 h-4" />
-                  Sign Out
+                  {t('signOut')}
                 </button>
               </div>
             ) : (
@@ -254,14 +296,14 @@ export default function Navbar() {
                   onClick={() => setMobileMenuOpen(false)}
                   className="text-center py-2 text-sm font-bold text-gray-300 rounded-lg hover:bg-white/5 transition-all"
                 >
-                  Log In
+                  {t('logIn')}
                 </Link>
                 <Link 
                   href="/register" 
                   onClick={() => setMobileMenuOpen(false)}
                   className="text-center py-2 text-sm font-bold text-black bg-gradient-to-r from-primary to-accent rounded-lg shadow-neonBlue hover:brightness-110"
                 >
-                  Sign Up
+                  {t('signUp')}
                 </Link>
               </div>
             )}

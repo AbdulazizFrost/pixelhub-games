@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { useLocale } from '@/context/LocaleContext';
 import GlassPanel from '@/components/GlassPanel';
 import { Upload, Gamepad2, Eye, BarChart3, Edit, Trash2, Plus, CheckCircle, AlertTriangle, Layers, Calendar } from 'lucide-react';
 
@@ -23,11 +24,15 @@ interface Game {
 export default function DevDashboard() {
   const router = useRouter();
   const { user, apiUrl, authFetch } = useAuth();
+  const { t } = useLocale();
   
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
   
   // Form states
+  const [formAchievements, setFormAchievements] = useState<Array<{ name: string; description: string; xpValue: number; iconUrl: string }>>([
+    { name: 'First Play', description: 'Unlock this by launching the game for the first time.', xpValue: 50, iconUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=100&q=80' }
+  ]);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [shortDescription, setShortDescription] = useState('');
@@ -128,6 +133,7 @@ export default function DevDashboard() {
       formData.append('ageRating', ageRating);
       formData.append('isFree', String(isFree));
       formData.append('price', price);
+      formData.append('achievements', JSON.stringify(formAchievements));
       
       formData.append('cover', cover);
       if (banner) formData.append('banner', banner);
@@ -182,6 +188,9 @@ export default function DevDashboard() {
       setBanner(null);
       setScreenshots(null);
       setZipFile(null);
+      setFormAchievements([
+        { name: 'First Play', description: 'Unlock this by launching the game for the first time.', xpValue: 50, iconUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=100&q=80' }
+      ]);
     } catch (err: any) {
       setErrorMsg(err.message || 'Failed to complete game release.');
     } finally {
@@ -494,6 +503,91 @@ export default function DevDashboard() {
                       onChange={(e) => setPrice(e.target.value)}
                       className="bg-black/40 border border-white/5 rounded-lg py-1 px-3 text-xs w-24 text-gray-200 outline-none focus:border-primary"
                     />
+                  </div>
+                )}
+              </div>
+
+              {/* Achievements Creation System */}
+              <div className="flex flex-col gap-2 p-4 bg-black/45 border border-white/5 rounded-xl mt-3">
+                <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                  <label className="text-xs font-black text-primary uppercase tracking-wider">Game Achievements</label>
+                  <button 
+                    type="button"
+                    onClick={() => setFormAchievements([...formAchievements, { name: '', description: '', xpValue: 50, iconUrl: '' }])}
+                    className="flex items-center gap-1 text-[10px] bg-primary/10 text-primary border border-primary/20 rounded px-2 py-0.5 font-bold hover:bg-primary/20 transition-all"
+                  >
+                    <Plus className="w-3 h-3" /> Add Achievement
+                  </button>
+                </div>
+                
+                {formAchievements.length === 0 ? (
+                  <span className="text-[10px] text-mutedText py-2">No achievements added yet. Players love achievements!</span>
+                ) : (
+                  <div className="flex flex-col gap-3 mt-1 max-h-48 overflow-y-auto pr-1">
+                    {formAchievements.map((ach, idx) => (
+                      <div key={idx} className="flex flex-col gap-2 p-2.5 rounded-lg bg-white/2 border border-white/5 relative">
+                        <button
+                          type="button"
+                          onClick={() => setFormAchievements(formAchievements.filter((_, i) => i !== idx))}
+                          className="absolute top-1.5 right-1.5 text-mutedText hover:text-secondary"
+                          title="Remove Achievement"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                        
+                        <div className="grid grid-cols-2 gap-2">
+                          <input 
+                            type="text" 
+                            placeholder="Title (e.g. Speedrunner)"
+                            value={ach.name}
+                            required
+                            onChange={(e) => {
+                              const updated = [...formAchievements];
+                              updated[idx].name = e.target.value;
+                              setFormAchievements(updated);
+                            }}
+                            className="bg-black/30 border border-white/5 rounded py-1.5 px-2 text-[10px] text-gray-200 outline-none focus:border-primary/45"
+                          />
+                          <input 
+                            type="number" 
+                            placeholder="XP Value (e.g. 50)"
+                            value={ach.xpValue}
+                            required
+                            onChange={(e) => {
+                              const updated = [...formAchievements];
+                              updated[idx].xpValue = parseInt(e.target.value) || 0;
+                              setFormAchievements(updated);
+                            }}
+                            className="bg-black/30 border border-white/5 rounded py-1.5 px-2 text-[10px] text-gray-200 outline-none focus:border-primary/45"
+                          />
+                        </div>
+                        
+                        <input 
+                          type="text" 
+                          placeholder="Description (e.g. Complete level 1 under 30s)"
+                          value={ach.description}
+                          required
+                          onChange={(e) => {
+                            const updated = [...formAchievements];
+                            updated[idx].description = e.target.value;
+                            setFormAchievements(updated);
+                          }}
+                          className="bg-black/30 border border-white/5 rounded py-1.5 px-2 text-[10px] text-gray-200 outline-none focus:border-primary/45"
+                        />
+
+                        <input 
+                          type="text" 
+                          placeholder="Icon Image URL (e.g. Unsplash URL)"
+                          value={ach.iconUrl}
+                          onChange={(e) => {
+                            const updated = [...formAchievements];
+                            updated[idx].iconUrl = e.target.value;
+                            setFormAchievements(updated);
+                          }}
+                          className="bg-black/30 border border-white/5 rounded py-1.5 px-2 text-[10px] text-gray-200 outline-none focus:border-primary/45"
+                        />
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>

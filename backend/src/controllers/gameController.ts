@@ -97,6 +97,17 @@ export const createGame = async (req: AuthRequest, res: Response) => {
 
     const parsedTags = typeof tags === 'string' ? tags.split(',').map((t) => t.trim()) : tags || [];
 
+    let parsedAchievements = [];
+    try {
+      if (req.body.achievements) {
+        parsedAchievements = typeof req.body.achievements === 'string' 
+          ? JSON.parse(req.body.achievements) 
+          : req.body.achievements;
+      }
+    } catch (e) {
+      console.error("Failed to parse achievements:", e);
+    }
+
     // Create DB entry
     const game = await prisma.game.create({
       data: {
@@ -115,6 +126,14 @@ export const createGame = async (req: AuthRequest, res: Response) => {
         price: price ? parseFloat(price) : 0.0,
         developerId: req.user.id,
         status: 'PENDING', // Submissions go to admin queue first
+        achievements: {
+          create: parsedAchievements.map((ach: any) => ({
+            name: ach.name,
+            description: ach.description,
+            xpValue: ach.xpValue ? parseInt(ach.xpValue) : 50,
+            iconUrl: ach.iconUrl || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=100&q=80'
+          }))
+        },
         media: {
           create: screenshots.map((url) => ({
             url,

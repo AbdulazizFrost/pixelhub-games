@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useLocale } from '@/context/LocaleContext';
 import GlassPanel from '@/components/GlassPanel';
 import { Trophy, Calendar, Gamepad2, Eye, Award, Users, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
@@ -42,6 +43,7 @@ interface ProfileUser {
 export default function ProfilePage({ params }: { params: { username: string } }) {
   const { username } = params;
   const { apiUrl, user: currentUser, authFetch } = useAuth();
+  const { t } = useLocale();
   
   const [profile, setProfile] = useState<ProfileUser | null>(null);
   const [loading, setLoading] = useState(true);
@@ -171,12 +173,12 @@ export default function ProfilePage({ params }: { params: { username: string } }
           <GlassPanel className="flex flex-col gap-4">
             <div className="flex items-center gap-2 border-b border-white/5 pb-2">
               <Gamepad2 className="w-5 h-5 text-primary text-glow-blue" />
-              <h3 className="font-extrabold text-sm uppercase tracking-wider text-white">Library & Activity</h3>
+              <h3 className="font-extrabold text-sm uppercase tracking-wider text-white">{t('store')} & {t('recentActivity')}</h3>
             </div>
 
             {profile.playHistory.length === 0 ? (
               <div className="text-center py-8 text-xs text-mutedText">
-                No recent gameplay records.
+                Нет недавней игровой активности.
               </div>
             ) : (
               <div className="flex flex-col gap-3">
@@ -188,13 +190,13 @@ export default function ProfilePage({ params }: { params: { username: string } }
                         <Link href={`/game/${item.game.slug}`} className="text-xs font-extrabold text-gray-200 hover:text-primary transition-colors">
                           {item.game.title}
                         </Link>
-                        <p className="text-[10px] text-mutedText mt-0.5">Last played: {new Date(item.lastPlayedAt).toLocaleDateString()}</p>
+                        <p className="text-[10px] text-mutedText mt-0.5">Сыграно: {new Date(item.lastPlayedAt).toLocaleDateString()}</p>
                       </div>
                     </div>
 
                     <div className="text-right">
-                      <span className="text-xs font-extrabold text-primary">{(item.playTimeSeconds / 60).toFixed(0)} min</span>
-                      <p className="text-[9px] text-mutedText mt-0.5">Total Playtime</p>
+                      <span className="text-xs font-extrabold text-primary">{(item.playTimeSeconds / 60).toFixed(0)} {t('minutes')}</span>
+                      <p className="text-[9px] text-mutedText mt-0.5">{t('playedTime')}</p>
                     </div>
                   </div>
                 ))}
@@ -206,12 +208,12 @@ export default function ProfilePage({ params }: { params: { username: string } }
           <GlassPanel className="flex flex-col gap-4">
             <div className="flex items-center gap-2 border-b border-white/5 pb-2">
               <Trophy className="w-5 h-5 text-yellow-500" />
-              <h3 className="font-extrabold text-sm uppercase tracking-wider text-white">Achievements Unlocked ({profile.achievements.length})</h3>
+              <h3 className="font-extrabold text-sm uppercase tracking-wider text-white">{t('unlockedAchievements')} ({profile.achievements.length})</h3>
             </div>
 
             {profile.achievements.length === 0 ? (
               <div className="text-center py-8 text-xs text-mutedText">
-                No achievements unlocked yet. Time to unlock some badges!
+                {t('noAchievements')}
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -220,8 +222,8 @@ export default function ProfilePage({ params }: { params: { username: string } }
                     <img src={item.achievement.iconUrl} alt="achievement icon" className="w-10 h-10 object-cover rounded border border-white/5" />
                     <div>
                       <h4 className="text-xs font-bold text-gray-200">{item.achievement.name}</h4>
-                      <span className="text-[9px] text-mutedText block">Game: {item.achievement.game.title}</span>
-                      <span className="text-[9px] text-primary/80 font-bold block mt-0.5">Unlocked {new Date(item.unlockedAt).toLocaleDateString()}</span>
+                      <span className="text-[9px] text-mutedText block">Игра: {item.achievement.game.title}</span>
+                      <span className="text-[9px] text-primary/80 font-bold block mt-0.5">{t('unlocked')} {new Date(item.unlockedAt).toLocaleDateString()}</span>
                     </div>
                   </div>
                 ))}
@@ -236,18 +238,18 @@ export default function ProfilePage({ params }: { params: { username: string } }
           
           {/* Level Progress Panel */}
           <GlassPanel glow className="flex flex-col gap-4">
-            <h3 className="font-extrabold text-sm uppercase tracking-wider text-mutedText border-b border-white/5 pb-2">Progress Dashboard</h3>
+            <h3 className="font-extrabold text-sm uppercase tracking-wider text-mutedText border-b border-white/5 pb-2">Прогресс</h3>
             
             <div className="flex items-center justify-between">
-              <span className="text-xs text-mutedText">Platform Level:</span>
+              <span className="text-xs text-mutedText">{t('level')}:</span>
               <span className="text-lg font-black text-primary text-glow-blue border border-primary/30 rounded px-2.5 py-0.5 bg-primary/5">
-                LVL {profile.level}
+                {profile.level}
               </span>
             </div>
 
             <div className="flex flex-col gap-1.5 mt-2">
               <div className="flex justify-between text-[11px] font-bold text-gray-400">
-                <span>XP Progress</span>
+                <span>XP</span>
                 <span>{profile.xp % 500} / 500 XP</span>
               </div>
               <div className="w-full h-2.5 bg-black border border-white/5 rounded-full overflow-hidden">
