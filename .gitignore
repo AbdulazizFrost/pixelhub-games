@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Production builds
+frontend/.next/
+frontend/out/
+backend/dist/
+
+# Environment variables
+.env
+.env.local
+.env.production
+backend/.env
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Local Uploads (Ignore user-uploaded games and assets, keep default demo game)
+backend/public/uploads/covers/*
+backend/public/uploads/banners/*
+backend/public/uploads/screenshots/*
+backend/public/uploads/games/extracted/*
+backend/public/uploads/games/*.zip
+backend/public/uploads/games/zipFile-*
+!backend/public/uploads/games/demo/
+!backend/public/uploads/games/demo/index.html

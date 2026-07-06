@@ -1,0 +1,204 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  USER
+  DEVELOPER
+  ADMIN
+}
+
+enum GameStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+model User {
+  id               String            @id @default(uuid())
+  email            String            @unique
+  username         String            @unique
+  passwordHash     String
+  role             Role              @default(USER)
+  level            Int               @default(1)
+  xp               Int               @default(0)
+  points           Int               @default(0)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  profile          Profile?
+  games            Game[]            @relation("DeveloperGames")
+  reviews          Review[]
+  comments         Comment[]
+  playHistory      PlayHistory[]
+  achievements     UserAchievement[]
+  subscribers      Subscription[]    @relation("DeveloperSubscribers")
+  subscriptions    Subscription[]    @relation("UserSubscriptions")
+  likes            GameLike[]
+}
+
+model Profile {
+  id             String   @id @default(uuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  avatarUrl      String?
+  bannerUrl      String?
+  bio            String?
+  favoriteGames  String[] @default([])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Subscription {
+  id          String   @id @default(uuid())
+  userId      String   // The regular user subscribing
+  user        User     @relation("UserSubscriptions", fields: [userId], references: [id], onDelete: Cascade)
+  developerId String   // The developer being subscribed to
+  developer   User     @relation("DeveloperSubscribers", fields: [developerId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@unique([userId, developerId])
+}
+
+model Category {
+  id    String @id @default(uuid())
+  name  String @unique
+  slug  String @unique
+  games Game[]
+}
+
+model Game {
+  id               String            @id @default(uuid())
+  title            String
+  slug             String            @unique
+  description      String
+  shortDescription String
+  coverUrl         String
+  bannerUrl        String
+  categoryId       String
+  category         Category          @relation(fields: [categoryId], references: [id])
+  tags             String[]
+  ageRating        String            @default("3+")
+  version          String            @default("1.0.0")
+  size             Float             @default(0.0) // size in MB
+  isFree           Boolean           @default(true)
+  price            Float             @default(0.0)
+  developerId      String
+  developer        User              @relation("DeveloperGames", fields: [developerId], references: [id], onDelete: Cascade)
+  status           GameStatus        @default(PENDING)
+  ratingAverage    Float             @default(0.0)
+  ratingsCount     Int               @default(0)
+  playsCount       Int               @default(0)
+  likesCount       Int               @default(0)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  media            GameMedia[]
+  versions         GameVersion[]
+  reviews          Review[]
+  comments         Comment[]
+  playHistory      PlayHistory[]
+  likes            GameLike[]
+  achievements     Achievement[]
+}
+
+model GameMedia {
+  id        String    @id @default(uuid())
+  gameId    String
+  game      Game      @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  type      MediaType @default(IMAGE)
+  url       String
+  createdAt DateTime  @default(now())
+}
+
+model GameVersion {
+  id         String   @id @default(uuid())
+  gameId     String
+  game       Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  version    String
+  buildPath  String   // Folder path on local static server or S3 URL
+  changelog  String?
+  createdAt  DateTime @default(now())
+}
+
+model GameLike {
+  id        String   @id @default(uuid())
+  gameId    String
+  game      Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([gameId, userId])
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  gameId    String
+  game      Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating    Int      // 1 to 5 stars
+  text      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([gameId, userId])
+}
+
+model Comment {
+  id        String    @id @default(uuid())
+  gameId    String
+  game      Game      @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  text      String
+  parentId  String?
+  parent    Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   Comment[] @relation("CommentReplies")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Achievement {
+  id          String            @id @default(uuid())
+  gameId      String
+  game        Game              @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  name        String
+  description String
+  iconUrl     String
+  xpValue     Int               @default(100)
+  createdAt   DateTime          @default(now())
+  users       UserAchievement[]
+}
+
+model UserAchievement {
+  id            String      @id @default(uuid())
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievementId String
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  unlockedAt    DateTime    @default(now())
+
+  @@unique([userId, achievementId])
+}
+
+model PlayHistory {
+  id               String   @id @default(uuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gameId           String
+  game             Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  playTimeSeconds  Int      @default(0)
+  lastPlayedAt     DateTime @default(now())
+
+  @@unique([userId, gameId])
+}
