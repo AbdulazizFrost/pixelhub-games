@@ -17,7 +17,8 @@ type TranslationKeys =
   | 'sortBy' | 'newReleases' | 'popularity' | 'topRated' | 'genres' | 'allGenres' | 'communityNews'
   | 'emailAddress' | 'passwordLabel' | 'loggingIn'
   | 'welcomeBack' | 'loginSubtitle'
-  | 'joinEcosystem' | 'accountType' | 'player' | 'usernameLabel' | 'creatingAccount' | 'logInHere';
+  | 'joinEcosystem' | 'accountType' | 'player' | 'usernameLabel' | 'creatingAccount' | 'logInHere'
+  | 'viewDetails' | 'uploadYourGame' | 'exploreStore';
 
 const translations: Record<Language, Record<TranslationKeys, string>> = {
   en: {
@@ -84,7 +85,10 @@ const translations: Record<Language, Record<TranslationKeys, string>> = {
     player: "Player",
     usernameLabel: "Username",
     creatingAccount: "CREATING...",
-    logInHere: "Log in here"
+    logInHere: "Log in here",
+    viewDetails: "VIEW DETAILS",
+    uploadYourGame: "UPLOAD YOUR GAME",
+    exploreStore: "EXPLORE STORE"
   },
   ru: {
     logo: "PixelHub",
@@ -150,7 +154,10 @@ const translations: Record<Language, Record<TranslationKeys, string>> = {
     player: "Игрок",
     usernameLabel: "Имя пользователя",
     creatingAccount: "СОЗДАНИЕ...",
-    logInHere: "Войти здесь"
+    logInHere: "Войти здесь",
+    viewDetails: "ПОДРОБНЕЕ",
+    uploadYourGame: "ОПУБЛИКОВАТЬ ИГРУ",
+    exploreStore: "ОБЗОР МАГАЗИНА"
   }
 };
 

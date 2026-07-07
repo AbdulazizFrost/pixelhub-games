@@ -14,6 +14,8 @@ interface Game {
   title: string;
   slug: string;
   coverUrl: string;
+  bannerUrl?: string;
+  shortDescription?: string;
   tags: string[];
   isFree: boolean;
   price: number;
@@ -102,7 +104,7 @@ export default function StoreFront() {
     <div className="flex flex-col gap-10">
       
       {/* Hero Header Area */}
-      <HeroBanner />
+      <HeroBanner games={sortedGames.slice(0, 4)} />
 
       {/* Grid search and sort dashboard */}
       <GlassPanel glow className="flex flex-col md:flex-row gap-4 justify-between items-center py-4 px-6 mt-4">
