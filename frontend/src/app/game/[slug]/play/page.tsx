@@ -46,6 +46,16 @@ export default function PlayGamePage({ params }: { params: { slug: string } }) {
             authFetch(`/games/${data.game.id}/play`, { method: 'POST' }).catch((err) => {
               console.error("Failed to increment plays count:", err);
             });
+
+            // Save to local storage played list for library/recent filters
+            try {
+              const played = JSON.parse(localStorage.getItem('pixelhub_played') || '[]');
+              const filtered = played.filter((s: string) => s !== data.game.slug);
+              filtered.push(data.game.slug);
+              localStorage.setItem('pixelhub_played', JSON.stringify(filtered));
+            } catch (e) {
+              console.error("Local storage played save failed:", e);
+            }
           }
         } else {
           // Mock fallback URL

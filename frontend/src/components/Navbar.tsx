@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useLocale } from '@/context/LocaleContext';
 import { Gamepad2, LogOut, User, LayoutDashboard, Shield, ChevronDown, Menu, X, PlusCircle, Globe, Bell, Mail } from 'lucide-react';
@@ -10,6 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 export default function Navbar() {
   const { user, logout } = useAuth();
   const { lang, setLang, t } = useLocale();
+  const pathname = usePathname();
   
   // Menu dropdowns states
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -65,24 +67,30 @@ export default function Navbar() {
 
           {/* Desktop Main Links */}
           <div className="hidden lg:flex items-center gap-6 text-xs uppercase font-extrabold tracking-wider text-gray-400">
-            <Link href="/" className="text-white border-b-2 border-primary pb-1 transition-all">
+            <Link 
+              href="/" 
+              className={`transition-all pb-1 ${pathname === '/' ? 'text-white border-b-2 border-primary' : 'hover:text-white'}`}
+            >
               {t('discover')}
             </Link>
-            <Link href="/#categories" className="hover:text-white transition-colors">
+            <Link href="/#browse" className="hover:text-white transition-colors pb-1">
               {t('browse')}
             </Link>
-            <Link href="/#categories" className="hover:text-white transition-colors">
+            <Link href="/#categories" className="hover:text-white transition-colors pb-1">
               {t('categories')}
             </Link>
             {(user?.role === 'DEVELOPER' || user?.role === 'ADMIN') && (
-              <Link href="/dashboard" className="hover:text-white transition-colors">
+              <Link 
+                href="/dashboard" 
+                className={`transition-all pb-1 ${pathname === '/dashboard' ? 'text-white border-b-2 border-primary' : 'hover:text-white'}`}
+              >
                 {t('developerHub')}
               </Link>
             )}
-            <Link href="/" className="hover:text-white transition-colors">
+            <Link href="/#news" className="hover:text-white transition-colors pb-1">
               {t('news')}
             </Link>
-            <Link href="/" className="hover:text-white transition-colors">
+            <Link href="/#community" className="hover:text-white transition-colors pb-1">
               {t('community')}
             </Link>
           </div>

@@ -51,6 +51,17 @@ export default function StoreFront() {
   // Button interactivity states
   const [activeFilterTab, setActiveFilterTab] = useState<'home' | 'library' | 'favorites' | 'recent'>('home');
   const [followedDevs, setFollowedDevs] = useState<Record<string, boolean>>({});
+  const [playedSlugs, setPlayedSlugs] = useState<string[]>([]);
+
+  // Load played game slugs on mount
+  useEffect(() => {
+    try {
+      const played = JSON.parse(localStorage.getItem('pixelhub_played') || '[]');
+      setPlayedSlugs(played);
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
 
   // Load Store Games
   useEffect(() => {
@@ -93,11 +104,11 @@ export default function StoreFront() {
     // Sidebar button filters:
     let matchesSidebarTab = true;
     if (activeFilterTab === 'library') {
-      // Mock Library: show games that have been played by users
-      matchesSidebarTab = game.playsCount > 0;
+      matchesSidebarTab = playedSlugs.includes(game.slug);
     } else if (activeFilterTab === 'favorites') {
-      // Mock Favorites: show highly rated games
       matchesSidebarTab = game.ratingAverage >= 4.0;
+    } else if (activeFilterTab === 'recent') {
+      matchesSidebarTab = playedSlugs.includes(game.slug);
     }
 
     return matchesSearch && matchesCategory && matchesSidebarTab;
@@ -212,7 +223,7 @@ export default function StoreFront() {
         </div>
 
         {/* Categories Section */}
-        <div className="flex flex-col gap-1">
+        <div id="categories" className="flex flex-col gap-1">
           <span className="text-[10px] font-black uppercase tracking-wider text-mutedText px-3 mb-1">{t('categories')}</span>
           <button
             onClick={() => { setSelectedCategory('all'); setActiveFilterTab('home'); }}
@@ -312,7 +323,7 @@ export default function StoreFront() {
         </div>
 
         {/* 3. Popular Games Grid Section */}
-        <div className="flex flex-col gap-4">
+        <div id="browse" className="flex flex-col gap-4">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 border-b border-white/5 pb-2">
             <h2 className="text-xl font-black text-white uppercase tracking-wider flex items-center gap-2">
               <Flame className="w-5 h-5 text-secondary fill-secondary" />
@@ -390,7 +401,7 @@ export default function StoreFront() {
           </div>
 
           {/* News & Updates block */}
-          <div className="p-5 rounded-2xl bg-[#0b101c] border border-white/5 flex flex-col gap-4">
+          <div id="news" className="p-5 rounded-2xl bg-[#0b101c] border border-white/5 flex flex-col gap-4">
             <span className="text-xs font-black uppercase tracking-wider text-mutedText border-b border-white/5 pb-2 block">{t('newsAndUpdates')}</span>
             
             <div className="flex flex-col gap-3">
@@ -432,7 +443,7 @@ export default function StoreFront() {
           </div>
 
           {/* Community Activity block */}
-          <div className="p-5 rounded-2xl bg-[#0b101c] border border-white/5 flex flex-col gap-4">
+          <div id="community" className="p-5 rounded-2xl bg-[#0b101c] border border-white/5 flex flex-col gap-4">
             <span className="text-xs font-black uppercase tracking-wider text-mutedText border-b border-white/5 pb-2 block">{t('communityActivity')}</span>
             {communityActivities.length === 0 ? (
               <span className="text-[10px] text-mutedText py-6 text-center block">{t('noCommunityUpdates')}</span>
