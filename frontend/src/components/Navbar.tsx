@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { useLocale } from '@/context/LocaleContext';
-import { Gamepad2, LogOut, User, LayoutDashboard, Shield, ChevronDown, Menu, X, PlusCircle, Globe } from 'lucide-react';
+import { Gamepad2, LogOut, User, LayoutDashboard, Shield, ChevronDown, Menu, X, PlusCircle, Globe, Bell, Mail } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Navbar() {
@@ -16,150 +16,157 @@ export default function Navbar() {
   const toggleDropdown = () => setDropdownOpen(!dropdownOpen);
 
   return (
-    <nav className="sticky top-0 z-50 w-full border-b border-white/5 bg-[#080b10]/80 backdrop-blur-md px-4 md:px-8 py-3">
+    <nav className="sticky top-0 z-50 w-full border-b border-white/5 bg-[#0a0f19] px-4 md:px-8 py-3.5 select-none">
       <div className="container mx-auto flex items-center justify-between">
         
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 group">
-          <div className="p-2 rounded-lg bg-gradient-to-r from-primary to-accent shadow-neonBlue transition-all duration-300 group-hover:scale-105">
-            <Gamepad2 className="w-6 h-6 text-black" />
-          </div>
-          <span className="font-extrabold tracking-widest text-lg text-transparent bg-clip-text bg-gradient-to-r from-primary via-blue-400 to-secondary text-glow-blue">
-            {t('logo')}
-          </span>
-        </Link>
+        {/* Left: Logo & Nav Links */}
+        <div className="flex items-center gap-8">
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-2.5 group">
+            <div className="p-2 rounded-xl bg-gradient-to-r from-primary to-accent shadow-neonBlue transition-all duration-300 group-hover:scale-105">
+              <Gamepad2 className="w-5 h-5 text-black" />
+            </div>
+            <span className="font-black tracking-widest text-lg text-white uppercase font-sans">
+              PixelHub
+            </span>
+          </Link>
 
-        {/* Desktop Main Links */}
-        <div className="hidden md:flex items-center gap-6">
-          <Link href="/" className="text-sm font-semibold text-gray-300 hover:text-primary transition-colors">
-            {t('store')}
-          </Link>
-          <Link href="/#categories" className="text-sm font-semibold text-gray-300 hover:text-primary transition-colors">
-            {t('categories')}
-          </Link>
-          <Link href="/#faq" className="text-sm font-semibold text-gray-300 hover:text-primary transition-colors">
-            {t('faq')}
-          </Link>
+          {/* Desktop Main Links */}
+          <div className="hidden lg:flex items-center gap-6 text-xs uppercase font-extrabold tracking-wider text-gray-400">
+            <Link href="/" className="text-white border-b-2 border-primary pb-1 transition-all">
+              Discover
+            </Link>
+            <Link href="/#categories" className="hover:text-white transition-colors">
+              Browse
+            </Link>
+            <Link href="/#categories" className="hover:text-white transition-colors">
+              Categories
+            </Link>
+            {(user?.role === 'DEVELOPER' || user?.role === 'ADMIN') && (
+              <Link href="/dashboard" className="hover:text-white transition-colors">
+                Developer
+              </Link>
+            )}
+            <Link href="/" className="hover:text-white transition-colors">
+              News
+            </Link>
+            <Link href="/" className="hover:text-white transition-colors">
+              Community
+            </Link>
+          </div>
         </div>
 
-        {/* Desktop Auth Controls */}
-        <div className="hidden md:flex items-center gap-4">
+        {/* Right: Controls & Profile */}
+        <div className="hidden md:flex items-center gap-5">
           
           {/* Language Switcher */}
-          <div className="flex items-center bg-black/40 border border-white/5 rounded-xl p-0.5 gap-0.5 mr-2">
+          <div className="flex items-center bg-black/40 border border-white/5 rounded-xl p-0.5 gap-0.5">
             <button 
               onClick={() => setLang('ru')}
-              className={`px-2 py-1 rounded-lg text-[10px] font-black transition-all ${lang === 'ru' ? 'bg-primary text-black shadow-neonBlue' : 'text-gray-400 hover:text-white'}`}
+              className={`px-2 py-1 rounded-lg text-[9px] font-black transition-all ${lang === 'ru' ? 'bg-primary text-black shadow-neonBlue' : 'text-gray-400 hover:text-white'}`}
             >
               RU
             </button>
             <button 
               onClick={() => setLang('en')}
-              className={`px-2 py-1 rounded-lg text-[10px] font-black transition-all ${lang === 'en' ? 'bg-primary text-black shadow-neonBlue' : 'text-gray-400 hover:text-white'}`}
+              className={`px-2 py-1 rounded-lg text-[9px] font-black transition-all ${lang === 'en' ? 'bg-primary text-black shadow-neonBlue' : 'text-gray-400 hover:text-white'}`}
             >
               EN
             </button>
           </div>
 
+          {/* Notification & Message Icons */}
+          {user && (
+            <div className="flex items-center gap-3.5 text-gray-400">
+              <button className="hover:text-white transition-colors relative" title="Notifications">
+                <Bell className="w-4.5 h-4.5" />
+                <span className="absolute -top-1 -right-1 w-2 h-2 bg-secondary rounded-full animate-pulse" />
+              </button>
+              <button className="hover:text-white transition-colors" title="Messages">
+                <Mail className="w-4.5 h-4.5" />
+              </button>
+            </div>
+          )}
+
           {user ? (
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3.5 pl-2 border-l border-white/10">
               
-              {/* User Levels System Display */}
-              <div className="flex flex-col items-end gap-0.5">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] uppercase font-bold tracking-wider text-mutedText">{t('level')}</span>
-                  <span className="text-xs font-black text-primary border border-primary/40 rounded px-1.5 py-0.2 shadow-neonBlue bg-primary/5">
-                    {user.level}
-                  </span>
+              {/* Profile Card */}
+              <div className="flex items-center gap-3">
+                <div className="flex flex-col items-end">
+                  <span className="text-xs font-bold text-gray-200">{user.username}</span>
+                  <span className="text-[10px] text-mutedText">Level {user.level}</span>
                 </div>
-                {/* Micro XP Progress Bar */}
-                <div className="w-24 h-1 bg-white/10 rounded-full overflow-hidden mt-1">
-                  <div 
-                    className="h-full bg-gradient-to-r from-primary to-accent" 
-                    style={{ width: `${(user.xp % 500) / 5}%` }} 
-                  />
-                </div>
-              </div>
+                
+                {/* User Dropdown */}
+                <div className="relative">
+                  <button 
+                    onClick={toggleDropdown}
+                    className="flex items-center gap-1 p-0.5 rounded-xl border border-white/10 hover:border-primary/40 transition-all bg-surface"
+                  >
+                    <img 
+                      src={user.profile?.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${user.username}`} 
+                      alt="avatar" 
+                      className="w-7 h-7 rounded-lg bg-black/40"
+                    />
+                    <ChevronDown className="w-3.5 h-3.5 text-mutedText" />
+                  </button>
 
-              {/* Developer Actions */}
-              {(user.role === 'DEVELOPER' || user.role === 'ADMIN') && (
-                <Link 
-                  href="/dashboard" 
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-primary/20 bg-primary/5 text-xs text-primary font-bold hover:bg-primary/20 transition-all hover:shadow-[0_0_15px_rgba(0,240,255,0.2)]"
-                >
-                  <LayoutDashboard className="w-3.5 h-3.5" />
-                  {t('developerHub')}
-                </Link>
-              )}
-
-              {/* Admin Actions */}
-              {user.role === 'ADMIN' && (
-                <Link 
-                  href="/admin" 
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-secondary/20 bg-secondary/5 text-xs text-secondary font-bold hover:bg-secondary/20 transition-all hover:shadow-[0_0_15px_rgba(255,0,127,0.2)]"
-                >
-                  <Shield className="w-3.5 h-3.5" />
-                  {t('adminPanel')}
-                </Link>
-              )}
-
-              {/* User Dropdown */}
-              <div className="relative">
-                <button 
-                  onClick={toggleDropdown}
-                  className="flex items-center gap-2 p-1.5 rounded-lg bg-surface-light border border-white/5 hover:border-primary/30 transition-all"
-                >
-                  <img 
-                    src={user.profile?.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${user.username}`} 
-                    alt="avatar" 
-                    className="w-7 h-7 rounded-md bg-black/40 border border-white/10"
-                  />
-                  <ChevronDown className="w-4 h-4 text-mutedText" />
-                </button>
-
-                <AnimatePresence>
-                  {dropdownOpen && (
-                    <>
-                      <div className="fixed inset-0 z-10" onClick={() => setDropdownOpen(false)} />
-                      <motion.div 
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 10 }}
-                        className="absolute right-0 mt-2 w-48 rounded-xl border border-white/5 bg-surface p-2 shadow-2xl z-20 backdrop-blur-lg"
-                      >
-                        <Link 
-                          href={`/profile/${user.username}`}
-                          onClick={() => setDropdownOpen(false)}
-                          className="flex items-center gap-2 w-full p-2.5 rounded-lg text-xs font-semibold text-gray-300 hover:text-primary hover:bg-white/5 transition-all"
+                  <AnimatePresence>
+                    {dropdownOpen && (
+                      <>
+                        <div className="fixed inset-0 z-10" onClick={() => setDropdownOpen(false)} />
+                        <motion.div 
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: 10 }}
+                          className="absolute right-0 mt-2.5 w-48 rounded-xl border border-white/5 bg-[#0b101c] p-2 shadow-2xl z-20 backdrop-blur-lg"
                         >
-                          <User className="w-4 h-4" />
-                          {t('myProfile')}
-                        </Link>
-                        
-                        {(user.role === 'DEVELOPER' || user.role === 'ADMIN') && (
                           <Link 
-                            href="/dashboard"
+                            href={`/profile/${user.username}`}
                             onClick={() => setDropdownOpen(false)}
-                            className="flex items-center gap-2 w-full p-2.5 rounded-lg text-xs font-semibold text-gray-300 hover:text-primary hover:bg-white/5 transition-all"
+                            className="flex items-center gap-2.5 w-full p-2.5 rounded-lg text-xs font-semibold text-gray-300 hover:text-primary hover:bg-white/5 transition-all"
                           >
-                            <PlusCircle className="w-4 h-4" />
-                            {t('publishBuild')}
+                            <User className="w-4 h-4" />
+                            {t('myProfile')}
                           </Link>
-                        )}
+                          
+                          {(user.role === 'DEVELOPER' || user.role === 'ADMIN') && (
+                            <Link 
+                              href="/dashboard"
+                              onClick={() => setDropdownOpen(false)}
+                              className="flex items-center gap-2.5 w-full p-2.5 rounded-lg text-xs font-semibold text-gray-300 hover:text-primary hover:bg-white/5 transition-all"
+                            >
+                              <PlusCircle className="w-4 h-4" />
+                              {t('publishBuild')}
+                            </Link>
+                          )}
 
-                        <hr className="border-white/5 my-1" />
+                          {user.role === 'ADMIN' && (
+                            <Link 
+                              href="/admin"
+                              onClick={() => setDropdownOpen(false)}
+                              className="flex items-center gap-2.5 w-full p-2.5 rounded-lg text-xs font-semibold text-gray-300 hover:text-secondary hover:bg-white/5 transition-all"
+                            >
+                              <Shield className="w-4 h-4" />
+                              {t('adminPanel')}
+                            </Link>
+                          )}
 
-                        <button 
-                          onClick={() => { setDropdownOpen(false); logout(); }}
-                          className="flex items-center gap-2 w-full p-2.5 rounded-lg text-xs font-semibold text-secondary hover:bg-secondary/10 transition-all text-left"
-                        >
-                          <LogOut className="w-4 h-4" />
-                          {t('signOut')}
-                        </button>
-                      </motion.div>
-                    </>
-                  )}
-                </AnimatePresence>
+                          <hr className="border-white/5 my-1" />
+
+                          <button 
+                            onClick={() => { setDropdownOpen(false); logout(); }}
+                            className="flex items-center gap-2.5 w-full p-2.5 rounded-lg text-xs font-semibold text-secondary hover:bg-secondary/10 transition-all text-left"
+                          >
+                            <LogOut className="w-4 h-4" />
+                            {t('signOut')}
+                          </button>
+                        </motion.div>
+                      </>
+                    )}
+                  </AnimatePresence>
+                </div>
               </div>
 
             </div>
@@ -183,7 +190,7 @@ export default function Navbar() {
 
         {/* Mobile menu trigger */}
         <button 
-          className="flex md:hidden text-gray-300"
+          className="flex lg:hidden text-gray-300"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
         >
           {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -198,9 +205,8 @@ export default function Navbar() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="md:hidden w-full border-t border-white/5 bg-[#080b10] flex flex-col gap-4 py-4 px-2 mt-2"
+            className="lg:hidden w-full border-t border-white/5 bg-[#0a0f19] flex flex-col gap-4 py-4 px-2 mt-2"
           >
-            
             {/* Language Switcher in Mobile Drawer */}
             <div className="flex items-center justify-between px-2">
               <span className="text-xs font-bold text-mutedText flex items-center gap-1.5">
@@ -229,14 +235,14 @@ export default function Navbar() {
               onClick={() => setMobileMenuOpen(false)}
               className="text-sm py-1.5 text-gray-300 hover:text-primary transition-colors"
             >
-              {t('store')}
+              Discover
             </Link>
             <Link 
               href="/#categories" 
               onClick={() => setMobileMenuOpen(false)}
               className="text-sm py-1.5 text-gray-300 hover:text-primary transition-colors"
             >
-              {t('categories')}
+              Categories
             </Link>
             
             {user ? (

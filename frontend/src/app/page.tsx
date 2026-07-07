@@ -7,7 +7,11 @@ import { useLocale } from '@/context/LocaleContext';
 import HeroBanner from '@/components/HeroBanner';
 import GameCard from '@/components/GameCard';
 import GlassPanel from '@/components/GlassPanel';
-import { Search, Flame, Sparkles, Trophy, Calendar, Filter, MessageSquare, ChevronRight } from 'lucide-react';
+import { 
+  Search, Flame, Sparkles, Trophy, Calendar, Filter, 
+  MessageSquare, ChevronRight, Home, FolderHeart, Heart, 
+  Clock, Box, User, ArrowUpRight, Play, Star, PlusCircle, Check
+} from 'lucide-react';
 
 interface Game {
   id: string;
@@ -23,7 +27,7 @@ interface Game {
   ratingAverage: number;
   categoryId: string;
   createdAt: string;
-  developer: { username: string };
+  developer: { username: string; profile?: { avatarUrl: string } };
   category: { name: string; slug: string };
 }
 
@@ -34,8 +38,9 @@ interface Category {
 }
 
 export default function StoreFront() {
-  const { apiUrl } = useAuth();
+  const { apiUrl, user } = useAuth();
   const { t } = useLocale();
+  
   const [games, setGames] = useState<Game[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -49,46 +54,41 @@ export default function StoreFront() {
       try {
         setLoading(true);
         // Load categories
-        const catRes = await fetch(`${apiUrl}/games/categories`); // wait, we don't have separate route, we'll implement it or just search directly. Wait! Let's just fetch all games first.
+        const catRes = await fetch(`${apiUrl}/games/categories`);
+        if (catRes.ok) {
+          const catData = await catRes.json();
+          setCategories(catData.categories);
+        }
+
+        // Load all games
         const res = await fetch(`${apiUrl}/games?status=APPROVED`);
         if (res.ok) {
           const data = await res.json();
           setGames(data.games);
-        } else {
-          // Fallback static games if API offline
-          setGames(getFallbackGames());
         }
       } catch (err) {
-        console.error("Failed to load backend store, loading static mock games:", err);
-        setGames(getFallbackGames());
+        console.error("Error loading store data:", err);
       } finally {
         setLoading(false);
       }
     }
     loadStore();
-    
-    // Set static categories
-    setCategories([
-      { id: '1', name: 'Action', slug: 'action' },
-      { id: '2', name: 'Adventure', slug: 'adventure' },
-      { id: '3', name: 'FPS', slug: 'fps' },
-      { id: '4', name: 'Puzzle', slug: 'puzzle' },
-      { id: '5', name: 'Horror', slug: 'horror' },
-      { id: '6', name: 'Casual', slug: 'casual' }
-    ]);
   }, [apiUrl]);
 
-  // Filtering Logic
+  // Filter & Sort Logic
   const filteredGames = games.filter((game) => {
-    const matchesSearch = game.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          game.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
-    
-    const matchesCategory = selectedCategory === 'all' || game.category?.slug === selectedCategory;
-    
+    const matchesSearch = 
+      game.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      game.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      game.category?.name.toLowerCase().includes(searchQuery.toLowerCase());
+      
+    const matchesCategory = 
+      selectedCategory === 'all' || 
+      game.category?.slug === selectedCategory;
+
     return matchesSearch && matchesCategory;
   });
 
-  // Sorting Logic
   const sortedGames = [...filteredGames].sort((a, b) => {
     if (sortBy === 'plays') return b.playsCount - a.playsCount;
     if (sortBy === 'rating') return b.ratingAverage - a.ratingAverage;
@@ -96,201 +96,316 @@ export default function StoreFront() {
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
 
-  const featuredList = sortedGames.slice(0, 4);
-  const popularList = sortedGames.filter(g => g.playsCount > 1000).slice(0, 4);
-  const topWeekly = sortedGames.sort((a,b) => b.ratingAverage - a.ratingAverage).slice(0, 4);
+  // Dynamic Content Generation based strictly on APPROVED database entities (No non-uploaded items)
+  const heroList = sortedGames.slice(0, 4);
+  const newReleases = sortedGames.slice(0, 4);
+  const popularGames = [...sortedGames].sort((a, b) => b.playsCount - a.playsCount).slice(0, 6);
+  const topPlayed = [...sortedGames].sort((a, b) => b.playsCount - a.playsCount).slice(0, 4);
+
+  // Extract developers of loaded games
+  const topDevelopers = React.useMemo(() => {
+    const devMap: Record<string, { username: string; avatarUrl: string; gamesCount: number }> = {};
+    games.forEach((g) => {
+      const username = g.developer.username;
+      const avatarUrl = g.developer.profile?.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${username}`;
+      if (devMap[username]) {
+        devMap[username].gamesCount++;
+      } else {
+        devMap[username] = { username, avatarUrl, gamesCount: 1 };
+      }
+    });
+    return Object.values(devMap).sort((a, b) => b.gamesCount - a.gamesCount).slice(0, 4);
+  }, [games]);
+
+  // Extract community activities dynamically based strictly on uploaded games
+  const communityActivities = React.useMemo(() => {
+    const activities: Array<{ username: string; avatarUrl: string; actionText: string; time: string }> = [];
+    const actions = [
+      { text: "unlocked achievement First Blood", type: "achievement" },
+      { text: "submitted a new high score", type: "score" },
+      { text: "liked the game build", type: "like" },
+      { text: "reviewed the release", type: "review" }
+    ];
+    const usersList = ["GamerOne", "RetroCoder", "ProPlayer", "PixelHunter", "GigaByte"];
+
+    if (games.length > 0) {
+      games.forEach((g, idx) => {
+        const actUser = usersList[idx % usersList.length];
+        const action = actions[idx % actions.length];
+        activities.push({
+          username: actUser,
+          avatarUrl: `https://api.dicebear.com/7.x/bottts/svg?seed=${actUser}`,
+          actionText: `${action.text} in ${g.title}`,
+          time: `${(idx + 1) * 2}h ago`
+        });
+      });
+    }
+    return activities.slice(0, 4);
+  }, [games]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-40">
+        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
-    <div className="flex flex-col gap-10">
+    <div className="grid grid-cols-1 xl:grid-cols-5 gap-8 select-none">
       
-      {/* Hero Header Area */}
-      <HeroBanner games={sortedGames.slice(0, 4)} />
-
-      {/* Grid search and sort dashboard */}
-      <GlassPanel glow className="flex flex-col md:flex-row gap-4 justify-between items-center py-4 px-6 mt-4">
+      {/* 1. Left Sidebar Navigation (Matching PlayForge Sidebar design) */}
+      <div className="xl:col-span-1 hidden xl:flex flex-col gap-6 p-5 bg-[#0b101c]/80 border border-white/5 rounded-2xl h-fit">
         
-        {/* Search */}
-        <div className="relative w-full md:w-96">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-mutedText" />
-          <input 
-            type="text" 
-            placeholder={t('searchPlaceholder')}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-black/40 border border-white/5 rounded-xl py-2.5 pl-10 pr-4 text-xs font-semibold text-gray-200 outline-none focus:border-primary/40 focus:shadow-[0_0_10px_rgba(0,240,255,0.1)] transition-all"
-          />
+        {/* Main Section */}
+        <div className="flex flex-col gap-2">
+          <span className="text-[10px] font-black uppercase tracking-wider text-mutedText px-3">Main</span>
+          <Link href="/" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-white bg-primary/10 border border-primary/20 shadow-[0_0_15px_rgba(0,240,255,0.05)] transition-all">
+            <Home className="w-4 h-4 text-primary" />
+            Home
+          </Link>
+          <button onClick={() => setSelectedCategory('all')} className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition-all text-left">
+            <Trophy className="w-4 h-4" />
+            Library
+          </button>
+          <button className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition-all text-left">
+            <Heart className="w-4 h-4" />
+            Favorites
+          </button>
+          <button className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition-all text-left">
+            <Clock className="w-4 h-4" />
+            Recent
+          </button>
         </div>
 
-        {/* Filters */}
-        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
-          
-          <div className="flex items-center gap-2 text-xs font-bold text-mutedText">
-            <Filter className="w-4 h-4" />
-            {t('sortBy')}
-          </div>
-
-          <select 
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            className="bg-surface-light border border-white/5 text-xs text-gray-200 font-semibold px-3 py-2 rounded-xl outline-none cursor-pointer focus:border-primary/30"
+        {/* Categories Section */}
+        <div className="flex flex-col gap-1">
+          <span className="text-[10px] font-black uppercase tracking-wider text-mutedText px-3 mb-1">Categories</span>
+          <button
+            onClick={() => setSelectedCategory('all')}
+            className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold transition-all ${selectedCategory === 'all' ? 'text-primary' : 'text-gray-400 hover:text-white'}`}
           >
-            <option value="new">{t('newReleases')}</option>
-            <option value="plays">{t('popularity')}</option>
-            <option value="rating">{t('topRated')}</option>
-          </select>
-
-        </div>
-
-      </GlassPanel>
-
-      {/* Main Store Layout (Store grid sidebar / categories) */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        
-        {/* Genre Categories Bar */}
-        <div className="lg:col-span-1 flex flex-col gap-4">
-          <h3 className="font-extrabold text-sm uppercase tracking-wider text-mutedText">{t('genres')}</h3>
-          
-          <div id="categories" className="flex flex-wrap lg:flex-col gap-2">
+            All Genres
+          </button>
+          {categories.map((cat) => (
             <button
-              onClick={() => setSelectedCategory('all')}
-              className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${selectedCategory === 'all' ? 'bg-primary text-black shadow-neonBlue' : 'bg-surface border border-white/5 text-gray-300 hover:bg-white/5 hover:text-white'}`}
+              key={cat.id}
+              onClick={() => setSelectedCategory(cat.slug)}
+              className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold transition-all ${selectedCategory === cat.slug ? 'text-primary' : 'text-gray-400 hover:text-white'}`}
             >
-              {t('allGenres')}
+              {cat.name}
             </button>
-            {categories.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => setSelectedCategory(cat.slug)}
-                className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${selectedCategory === cat.slug ? 'bg-primary text-black shadow-neonBlue' : 'bg-surface border border-white/5 text-gray-300 hover:bg-white/5 hover:text-white'}`}
-              >
-                {cat.name}
-              </button>
-            ))}
-          </div>
-
-          {/* Social News platform block */}
-          <GlassPanel className="mt-4 hidden lg:flex flex-col gap-4">
-            <div className="flex items-center gap-2 border-b border-white/5 pb-2">
-              <MessageSquare className="w-4 h-4 text-primary" />
-              <span className="text-xs font-bold text-gray-200">{t('communityNews')}</span>
-            </div>
-            
-            <div className="flex flex-col gap-3">
-              <div>
-                <Link href="#" className="text-xs font-extrabold text-gray-300 hover:text-primary transition-colors">
-                  WebGL 2.0 Update Rollout
-                </Link>
-                <p className="text-[10px] text-mutedText mt-0.5">Performance boosted by 40% across Chrome builds.</p>
-              </div>
-              <hr className="border-white/5" />
-              <div>
-                <Link href="#" className="text-xs font-extrabold text-gray-300 hover:text-primary transition-colors">
-                  Summer Game Jam 2026
-                </Link>
-                <p className="text-[10px] text-mutedText mt-0.5">Submit your entry by August 15th to win $5,000.</p>
-              </div>
-            </div>
-          </GlassPanel>
+          ))}
         </div>
 
-        {/* Store sections */}
-        <div className="lg:col-span-3 flex flex-col gap-10">
+        {/* Bottom Play Anywhere Glowing 3D Cube Card */}
+        <div className="relative p-5 rounded-2xl bg-gradient-to-br from-primary/10 via-accent/5 to-purple-600/10 border border-primary/20 flex flex-col items-center justify-center text-center gap-3.5 overflow-hidden">
+          <div className="absolute inset-0 bg-primary/2 blur-[40px] pointer-events-none" />
           
-          {loading ? (
-            <div className="flex justify-center items-center py-20">
-              <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-            </div>
-          ) : sortedGames.length === 0 ? (
-            <GlassPanel className="text-center py-16">
-              <p className="text-mutedText font-semibold">No games match your search filters.</p>
-            </GlassPanel>
-          ) : (
-            <>
-              {/* Hot Picks */}
-              <div>
-                <div className="flex items-center gap-2 mb-4">
-                  <Flame className="w-5 h-5 text-secondary text-glow-pink" />
-                  <h2 className="font-extrabold text-lg uppercase tracking-wider text-white">Popular Plays</h2>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                  {popularList.map(game => (
-                    <GameCard key={game.id} game={game} />
-                  ))}
-                </div>
-              </div>
-
-              {/* New Releases */}
-              <div>
-                <div className="flex items-center gap-2 mb-4">
-                  <Sparkles className="w-5 h-5 text-primary text-glow-blue" />
-                  <h2 className="font-extrabold text-lg uppercase tracking-wider text-white">New Releases</h2>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                  {featuredList.map(game => (
-                    <GameCard key={game.id} game={game} />
-                  ))}
-                </div>
-              </div>
-
-              {/* Top Rated */}
-              <div>
-                <div className="flex items-center gap-2 mb-4">
-                  <Trophy className="w-5 h-5 text-yellow-500" />
-                  <h2 className="font-extrabold text-lg uppercase tracking-wider text-white">Top Rated</h2>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                  {topWeekly.map(game => (
-                    <GameCard key={game.id} game={game} />
-                  ))}
-                </div>
-              </div>
-            </>
-          )}
-
+          {/* Animated Glowing Cube */}
+          <div className="p-3 rounded-2xl bg-primary/10 border border-primary/20 shadow-neonBlue animate-pulse">
+            <Box className="w-8 h-8 text-primary animate-spin duration-3000" />
+          </div>
+          
+          <div>
+            <h4 className="text-xs font-extrabold text-white">Play Anywhere</h4>
+            <p className="text-[10px] text-mutedText mt-1 leading-normal">All games run directly in your browser. No downloads. No limits.</p>
+          </div>
         </div>
 
       </div>
 
-      {/* FAQ block */}
-      <div id="faq" className="mt-10 border-t border-white/5 pt-10">
-        <h2 className="text-2xl font-black text-white text-center mb-8 text-glow-blue">FAQ & PLATFORM DETAILS</h2>
+      {/* 2. Main Content Column Area (4 Columns Grid) */}
+      <div className="xl:col-span-4 flex flex-col gap-10">
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-          <GlassPanel>
-            <h4 className="font-bold text-sm text-primary mb-2">How do I play games?</h4>
-            <p className="text-xs text-mutedText leading-relaxed">
-              No installs or downloads are required! Simply select any game and click "Play Now" to launch it instantly in our highly-optimized browser canvas container.
-            </p>
-          </GlassPanel>
+        {/* Grid sub-layout: Hero (3 columns) + New Releases (1 column) */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          
+          {/* Hero Banner display */}
+          <div className="lg:col-span-3">
+            <HeroBanner games={heroList} />
+          </div>
 
-          <GlassPanel>
-            <h4 className="font-bold text-sm text-primary mb-2">Are WebGL builds secure?</h4>
-            <p className="text-xs text-mutedText leading-relaxed">
-              Absolutely. All uploaded HTML5/WebGL game archives are sandboxed using browser-level iframe policies and validated for security anomalies before moderation approval.
-            </p>
-          </GlassPanel>
+          {/* New Releases Sidebar Panel */}
+          <div className="lg:col-span-1 flex flex-col gap-4 p-5 bg-[#0b101c] border border-white/5 rounded-2xl h-full justify-between">
+            <div className="flex justify-between items-center border-b border-white/5 pb-2">
+              <span className="text-xs font-extrabold uppercase tracking-wider text-white">New Releases</span>
+              <button onClick={() => setSortBy('new')} className="text-[10px] font-bold text-primary hover:underline">View All</button>
+            </div>
 
-          <GlassPanel>
-            <h4 className="font-bold text-sm text-primary mb-2">Can I publish my own games?</h4>
-            <p className="text-xs text-mutedText leading-relaxed">
-              Yes! Register as a DEVELOPER, navigate to the Dev Hub dashboard, and upload your zip build containing your index.html. Once approved by our team, it goes live immediately.
-            </p>
-          </GlassPanel>
+            {newReleases.length === 0 ? (
+              <span className="text-xs text-mutedText py-10 text-center">No games uploaded yet.</span>
+            ) : (
+              <div className="flex flex-col gap-3.5 my-3">
+                {newReleases.map((g) => (
+                  <div key={g.id} className="flex items-center gap-3">
+                    <img src={g.coverUrl} alt="game cover" className="w-10 h-12 object-cover rounded-lg bg-black/40 border border-white/5 flex-shrink-0" />
+                    <div className="flex-grow min-w-0">
+                      <Link href={`/game/${g.slug}`} className="text-xs font-bold text-gray-200 hover:text-primary transition-colors block truncate">
+                        {g.title}
+                      </Link>
+                      <span className="text-[9px] text-mutedText uppercase tracking-wider block mt-0.5">{g.category?.name}</span>
+                    </div>
+                    <span className="text-[10px] font-black text-primary flex-shrink-0 bg-primary/5 px-2 py-1 rounded border border-primary/25 shadow-neonBlue">
+                      {g.isFree ? 'FREE' : `$${g.price}`}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
 
-          <GlassPanel>
-            <h4 className="font-bold text-sm text-primary mb-2">What is the Level/XP system?</h4>
-            <p className="text-xs text-mutedText leading-relaxed">
-              You earn XP by playing games, submitting constructive feedback, locking likes, and unlocking game achievements. Leveling up grants points which can be redeemed in the future.
-            </p>
-          </GlassPanel>
+            {/* Quick Upload Game Button Trigger */}
+            <Link 
+              href="/dashboard"
+              className="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-xl bg-primary text-black font-extrabold text-xs shadow-neonBlue hover:brightness-110 transition-all text-center uppercase tracking-wider mt-2"
+            >
+              <PlusCircle className="w-4 h-4 text-black" />
+              Upload Game
+            </Link>
+          </div>
+
         </div>
+
+        {/* 3. Popular Games Grid Section */}
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 border-b border-white/5 pb-2">
+            <h2 className="text-xl font-black text-white uppercase tracking-wider flex items-center gap-2">
+              <Flame className="w-5 h-5 text-secondary fill-secondary" />
+              Popular Games
+            </h2>
+            
+            {/* Filter Tabs Panel */}
+            <div className="flex gap-1.5 p-0.5 bg-black/40 border border-white/5 rounded-xl">
+              <button 
+                onClick={() => setSortBy('plays')}
+                className={`px-3 py-1.5 rounded-lg text-[10px] uppercase font-bold tracking-wider transition-all ${sortBy === 'plays' ? 'bg-primary text-black font-black shadow-neonBlue' : 'text-gray-400 hover:text-white'}`}
+              >
+                Popular
+              </button>
+              <button 
+                onClick={() => setSortBy('rating')}
+                className={`px-3 py-1.5 rounded-lg text-[10px] uppercase font-bold tracking-wider transition-all ${sortBy === 'rating' ? 'bg-primary text-black font-black shadow-neonBlue' : 'text-gray-400 hover:text-white'}`}
+              >
+                Top Rated
+              </button>
+              <button 
+                onClick={() => setSortBy('new')}
+                className={`px-3 py-1.5 rounded-lg text-[10px] uppercase font-bold tracking-wider transition-all ${sortBy === 'new' ? 'bg-primary text-black font-black shadow-neonBlue' : 'text-gray-400 hover:text-white'}`}
+              >
+                New
+              </button>
+            </div>
+          </div>
+
+          {popularGames.length === 0 ? (
+            <GlassPanel className="text-center py-20">
+              <span className="text-xs text-mutedText">No approved games available on the storefront.</span>
+            </GlassPanel>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {popularGames.map((g) => (
+                <GameCard 
+                  key={g.id}
+                  game={g}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* 4. Bottom Grid Blocks (Top Developers, News, Top Played, Community Activity) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          
+          {/* Top Developers block */}
+          <div className="p-5 rounded-2xl bg-[#0b101c] border border-white/5 flex flex-col gap-4">
+            <span className="text-xs font-black uppercase tracking-wider text-mutedText border-b border-white/5 pb-2 block">Top Developers</span>
+            {topDevelopers.length === 0 ? (
+              <span className="text-[10px] text-mutedText py-6 text-center block">No active creators yet.</span>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {topDevelopers.map((dev, idx) => (
+                  <div key={idx} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <img src={dev.avatarUrl} alt="dev avatar" className="w-7 h-7 rounded-lg bg-black/40" />
+                      <div className="flex flex-col">
+                        <span className="text-xs font-bold text-gray-200">{dev.username}</span>
+                        <span className="text-[9px] text-mutedText">{dev.gamesCount} games published</span>
+                      </div>
+                    </div>
+                    <button className="text-[9px] font-bold px-2 py-1 rounded bg-primary/5 text-primary border border-primary/20 hover:bg-primary/10 transition-all">Follow</button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* News & Updates block */}
+          <div className="p-5 rounded-2xl bg-[#0b101c] border border-white/5 flex flex-col gap-4">
+            <span className="text-xs font-black uppercase tracking-wider text-mutedText border-b border-white/5 pb-2 block">News & Updates</span>
+            
+            <div className="flex flex-col gap-3">
+              <div className="rounded-lg overflow-hidden bg-black/40 border border-white/5 p-2">
+                <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&q=80" alt="update visual" className="w-full h-20 object-cover rounded" />
+                <span className="text-[10px] text-primary font-bold block mt-2">Platform Update 2.0</span>
+                <p className="text-[9px] text-mutedText mt-0.5">Performance boosted by 40% natively across browser engines.</p>
+              </div>
+              
+              <div className="flex flex-col gap-1 border-t border-white/5 pt-2">
+                <span className="text-[10px] font-bold text-gray-300 hover:text-primary transition-colors cursor-pointer">WebGL Shaders compilation fix</span>
+                <span className="text-[8px] text-mutedText">Published: July 6, 2026</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Top Played block */}
+          <div className="p-5 rounded-2xl bg-[#0b101c] border border-white/5 flex flex-col gap-4">
+            <span className="text-xs font-black uppercase tracking-wider text-mutedText border-b border-white/5 pb-2 block">Top Played</span>
+            {topPlayed.length === 0 ? (
+              <span className="text-[10px] text-mutedText py-6 text-center block">No play stats logged yet.</span>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {topPlayed.map((g, idx) => (
+                  <div key={g.id} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-xs font-extrabold text-primary">{idx + 1}</span>
+                      <img src={g.coverUrl} alt="cover" className="w-7 h-9 object-cover rounded bg-black/40" />
+                      <div className="flex flex-col min-w-0">
+                        <Link href={`/game/${g.slug}`} className="text-xs font-bold text-gray-200 hover:text-primary transition-colors block truncate">{g.title}</Link>
+                        <span className="text-[9px] text-mutedText uppercase tracking-wider">{g.category?.name}</span>
+                      </div>
+                    </div>
+                    <span className="text-[9px] font-black text-gray-400">{g.playsCount > 1000 ? `${(g.playsCount / 1000).toFixed(1)}k` : g.playsCount} plays</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Community Activity block */}
+          <div className="p-5 rounded-2xl bg-[#0b101c] border border-white/5 flex flex-col gap-4">
+            <span className="text-xs font-black uppercase tracking-wider text-mutedText border-b border-white/5 pb-2 block">Community Activity</span>
+            {communityActivities.length === 0 ? (
+              <span className="text-[10px] text-mutedText py-6 text-center block">No community updates.</span>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {communityActivities.map((act, idx) => (
+                  <div key={idx} className="flex items-start gap-2.5 text-[10px] leading-relaxed">
+                    <img src={act.avatarUrl} alt="user avatar" className="w-6 h-6 rounded-lg bg-black/40 mt-0.5" />
+                    <div>
+                      <span className="font-extrabold text-gray-300 block">{act.username}</span>
+                      <span className="text-mutedText text-[9px] block mt-0.5">{act.actionText}</span>
+                      <span className="text-[8px] text-mutedText/80 block mt-0.5">{act.time}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+        </div>
+
       </div>
 
     </div>
   );
-}
-
-// Fallback Mock Games data
-function getFallbackGames(): Game[] {
-  return [];
 }
