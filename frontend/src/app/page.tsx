@@ -7,6 +7,7 @@ import { useLocale } from '@/context/LocaleContext';
 import HeroBanner from '@/components/HeroBanner';
 import GameCard from '@/components/GameCard';
 import GlassPanel from '@/components/GlassPanel';
+import Sidebar from '@/components/Sidebar';
 import { 
   Search, Flame, Sparkles, Trophy, Calendar, Filter, 
   MessageSquare, ChevronRight, Home, FolderHeart, Heart, 
@@ -186,78 +187,7 @@ export default function StoreFront() {
   return (
     <div className="grid grid-cols-1 xl:grid-cols-5 gap-8 select-none">
       
-      {/* 1. Left Sidebar Navigation (Matching PlayForge Sidebar design) */}
-      <div className="xl:col-span-1 hidden xl:flex flex-col gap-6 p-5 bg-[#0b101c]/80 border border-white/5 rounded-2xl h-fit">
-        
-        {/* Main Section */}
-        <div className="flex flex-col gap-2">
-          <span className="text-[10px] font-black uppercase tracking-wider text-mutedText px-3">{t('main')}</span>
-          <button 
-            onClick={() => { setActiveFilterTab('home'); setSelectedCategory('all'); }} 
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-left ${activeFilterTab === 'home' ? 'text-white bg-primary/10 border border-primary/20 shadow-[0_0_15px_rgba(0,240,255,0.05)]' : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent'}`}
-          >
-            <Home className="w-4 h-4 text-primary" />
-            {t('discover')}
-          </button>
-          <button 
-            onClick={() => setActiveFilterTab('library')} 
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-left ${activeFilterTab === 'library' ? 'text-white bg-primary/10 border border-primary/20 shadow-[0_0_15px_rgba(0,240,255,0.05)]' : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent'}`}
-          >
-            <Trophy className="w-4 h-4 text-primary" />
-            {t('library')}
-          </button>
-          <button 
-            onClick={() => setActiveFilterTab('favorites')} 
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-left ${activeFilterTab === 'favorites' ? 'text-white bg-primary/10 border border-primary/20 shadow-[0_0_15px_rgba(0,240,255,0.05)]' : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent'}`}
-          >
-            <Heart className="w-4 h-4 text-primary" />
-            {t('favorites')}
-          </button>
-          <button 
-            onClick={() => { setActiveFilterTab('recent'); setSortBy('new'); }} 
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-left ${activeFilterTab === 'recent' ? 'text-white bg-primary/10 border border-primary/20 shadow-[0_0_15px_rgba(0,240,255,0.05)]' : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent'}`}
-          >
-            <Clock className="w-4 h-4 text-primary" />
-            {t('recent')}
-          </button>
-        </div>
-
-        {/* Categories Section */}
-        <div id="categories" className="flex flex-col gap-1">
-          <span className="text-[10px] font-black uppercase tracking-wider text-mutedText px-3 mb-1">{t('categories')}</span>
-          <button
-            onClick={() => { setSelectedCategory('all'); setActiveFilterTab('home'); }}
-            className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold transition-all ${selectedCategory === 'all' && activeFilterTab === 'home' ? 'text-primary bg-white/5' : 'text-gray-400 hover:text-white'}`}
-          >
-            {t('allGenres')}
-          </button>
-          {categories.map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => { setSelectedCategory(cat.slug); setActiveFilterTab('home'); }}
-              className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold transition-all ${selectedCategory === cat.slug ? 'text-primary bg-white/5' : 'text-gray-400 hover:text-white'}`}
-            >
-              {cat.name}
-            </button>
-          ))}
-        </div>
-
-        {/* Bottom Play Anywhere Glowing 3D Cube Card */}
-        <div className="relative p-5 rounded-2xl bg-gradient-to-br from-primary/10 via-accent/5 to-purple-600/10 border border-primary/20 flex flex-col items-center justify-center text-center gap-3.5 overflow-hidden">
-          <div className="absolute inset-0 bg-primary/2 blur-[40px] pointer-events-none" />
-          
-          {/* Animated Glowing Cube */}
-          <div className="p-3 rounded-2xl bg-primary/10 border border-primary/20 shadow-neonBlue animate-pulse">
-            <Box className="w-8 h-8 text-primary animate-spin duration-3000" />
-          </div>
-          
-          <div>
-            <h4 className="text-xs font-extrabold text-white">{t('playAnywhere')}</h4>
-            <p className="text-[10px] text-mutedText mt-1 leading-normal">{t('playAnywhereSub')}</p>
-          </div>
-        </div>
-
-      </div>
+      <Sidebar />
 
       {/* 2. Main Content Column Area (4 Columns Grid) */}
       <div className="xl:col-span-4 flex flex-col gap-10">
