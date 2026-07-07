@@ -219,7 +219,7 @@ export default function ProfilePage({ params }: { params: { username: string } }
               </button>
             )}
 
-            {currentUser && currentUser.username === username && (
+            {currentUser && profile && (currentUser.id === profile.id || currentUser.username.trim().toLowerCase() === decodeURIComponent(username).trim().toLowerCase()) && (
               <button 
                 onClick={() => setEditModalOpen(true)}
                 className="px-6 py-2.5 rounded-xl border border-primary/30 bg-primary/10 text-primary shadow-[0_0_10px_rgba(0,240,255,0.15)] hover:bg-primary/20 transition-all text-xs font-bold"
