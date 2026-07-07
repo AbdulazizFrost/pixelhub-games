@@ -19,6 +19,7 @@ type TranslationKeys =
   | 'welcomeBack' | 'loginSubtitle'
   | 'joinEcosystem' | 'accountType' | 'player' | 'usernameLabel' | 'creatingAccount' | 'logInHere'
   | 'viewDetails' | 'uploadYourGame' | 'exploreStore'
+  | 'notifications' | 'messages' | 'noNotifications' | 'noMessages' | 'clearAll'
   | 'discover' | 'browse' | 'news' | 'community' | 'main' | 'library' | 'favorites' | 'recent'
   | 'playAnywhere' | 'playAnywhereSub' | 'viewAll' | 'uploadGame' | 'popularGames' | 'topDevelopers'
   | 'follow' | 'following' | 'newsAndUpdates' | 'topPlayed' | 'communityActivity'
@@ -122,7 +123,12 @@ const translations: Record<Language, Record<TranslationKeys, string>> = {
     popularTab: "Popular",
     topRatedTab: "Top Rated",
     newTab: "New",
-    searchGames: "Search games, developers..."
+    searchGames: "Search games, developers...",
+    notifications: "Notifications",
+    messages: "Messages",
+    noNotifications: "No new notifications",
+    noMessages: "No new messages",
+    clearAll: "Clear All"
   },
   ru: {
     logo: "PixelHub",
@@ -220,7 +226,12 @@ const translations: Record<Language, Record<TranslationKeys, string>> = {
     popularTab: "Популярное",
     topRatedTab: "Лучшие",
     newTab: "Новые",
-    searchGames: "Поиск игр, разработчиков..."
+    searchGames: "Поиск игр, разработчиков...",
+    notifications: "Уведомления",
+    messages: "Сообщения",
+    noNotifications: "Нет новых уведомлений",
+    noMessages: "Нет новых сообщений",
+    clearAll: "Очистить всё"
   }
 };
 
