@@ -42,12 +42,71 @@ interface ProfileUser {
 
 export default function ProfilePage({ params }: { params: { username: string } }) {
   const { username } = params;
-  const { apiUrl, user: currentUser, authFetch } = useAuth();
-  const { t } = useLocale();
+  const { apiUrl, user: currentUser, authFetch, refreshUser } = useAuth();
+  const { t, lang } = useLocale();
   
   const [profile, setProfile] = useState<ProfileUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSubscribed, setIsSubscribed] = useState(false);
+
+  // Edit Profile States
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editBio, setEditBio] = useState('');
+  const [editAvatarUrl, setEditAvatarUrl] = useState('');
+  const [editBannerUrl, setEditBannerUrl] = useState('');
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [updateError, setUpdateError] = useState('');
+
+  // Sync edit states when profile loads
+  useEffect(() => {
+    if (profile) {
+      setEditBio(profile.profile.bio || '');
+      setEditAvatarUrl(profile.profile.avatarUrl || '');
+      setEditBannerUrl(profile.profile.bannerUrl || '');
+    }
+  }, [profile]);
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setSavingProfile(true);
+      setUpdateError('');
+      
+      const res = await authFetch('/auth/profile', {
+        method: 'PUT',
+        body: JSON.stringify({
+          bio: editBio,
+          avatarUrl: editAvatarUrl,
+          bannerUrl: editBannerUrl
+        })
+      });
+
+      if (res.ok) {
+        // Update page profile state
+        setProfile(prev => prev ? {
+          ...prev,
+          profile: {
+            ...prev.profile,
+            bio: editBio,
+            avatarUrl: editAvatarUrl,
+            bannerUrl: editBannerUrl
+          }
+        } : null);
+        
+        // Refresh Auth Context user credentials for navigation
+        await refreshUser();
+        setEditModalOpen(false);
+      } else {
+        const errorData = await res.json();
+        setUpdateError(errorData.message || 'Failed to update profile');
+      }
+    } catch (err: any) {
+      console.error(err);
+      setUpdateError('Network error occurred');
+    } finally {
+      setSavingProfile(false);
+    }
+  };
 
   useEffect(() => {
     async function loadProfile() {
@@ -157,6 +216,15 @@ export default function ProfilePage({ params }: { params: { username: string } }
                 className={`px-6 py-2.5 rounded-xl border text-xs font-bold transition-all ${isSubscribed ? 'border-primary/40 bg-primary/10 text-primary shadow-[0_0_10px_rgba(0,240,255,0.15)]' : 'border-white/5 bg-white/5 hover:bg-white/10 text-gray-200'}`}
               >
                 {isSubscribed ? 'Subscribed' : 'Subscribe to Dev'}
+              </button>
+            )}
+
+            {currentUser && currentUser.username === username && (
+              <button 
+                onClick={() => setEditModalOpen(true)}
+                className="px-6 py-2.5 rounded-xl border border-primary/30 bg-primary/10 text-primary shadow-[0_0_10px_rgba(0,240,255,0.15)] hover:bg-primary/20 transition-all text-xs font-bold"
+              >
+                {lang === 'ru' ? 'Редактировать профиль' : 'Edit Profile'}
               </button>
             )}
           </div>
@@ -323,10 +391,92 @@ export default function ProfilePage({ params }: { params: { username: string } }
               </div>
             </GlassPanel>
           )}
-
         </div>
-
       </div>
+
+      {/* Edit Profile Modal */}
+      {editModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
+          <div 
+            className="w-full max-w-md rounded-2xl border border-white/5 bg-[#0b101c] p-6 shadow-2xl flex flex-col gap-4 relative animate-in fade-in zoom-in duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="border-b border-white/5 pb-2">
+              <h3 className="text-sm font-extrabold uppercase tracking-wider text-white">
+                {lang === 'ru' ? 'Редактирование профиля' : 'Edit Profile'}
+              </h3>
+            </div>
+
+            {updateError && (
+              <span className="text-[10px] font-bold text-secondary">{updateError}</span>
+            )}
+
+            <form onSubmit={handleSaveProfile} className="flex flex-col gap-4">
+              
+              {/* Avatar Url */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-black uppercase tracking-wider text-mutedText">
+                  {lang === 'ru' ? 'Ссылка на аватар' : 'Avatar Image URL'}
+                </label>
+                <input 
+                  type="text" 
+                  value={editAvatarUrl}
+                  onChange={(e) => setEditAvatarUrl(e.target.value)}
+                  placeholder="e.g. https://unsplash.com/... or SVG link"
+                  className="bg-black/40 border border-white/5 rounded-xl py-2 px-3 text-xs text-gray-200 outline-none focus:border-primary/45 w-full"
+                />
+              </div>
+
+              {/* Banner Url */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-black uppercase tracking-wider text-mutedText">
+                  {lang === 'ru' ? 'Ссылка на баннер' : 'Banner Image URL'}
+                </label>
+                <input 
+                  type="text" 
+                  value={editBannerUrl}
+                  onChange={(e) => setEditBannerUrl(e.target.value)}
+                  placeholder="e.g. https://images.unsplash.com/..."
+                  className="bg-black/40 border border-white/5 rounded-xl py-2 px-3 text-xs text-gray-200 outline-none focus:border-primary/45 w-full"
+                />
+              </div>
+
+              {/* Bio */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-black uppercase tracking-wider text-mutedText">
+                  {lang === 'ru' ? 'О себе' : 'Bio'}
+                </label>
+                <textarea 
+                  rows={3}
+                  value={editBio}
+                  onChange={(e) => setEditBio(e.target.value)}
+                  placeholder={lang === 'ru' ? 'Расскажите немного о себе...' : 'Write something about yourself...'}
+                  className="bg-black/40 border border-white/5 rounded-xl py-2 px-3 text-xs text-gray-200 outline-none focus:border-primary/45 w-full resize-none"
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end gap-3 border-t border-white/5 pt-4 mt-2">
+                <button 
+                  type="button"
+                  onClick={() => setEditModalOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-white/5 hover:bg-white/5 text-xs text-gray-400 font-bold"
+                >
+                  {lang === 'ru' ? 'Отмена' : 'Cancel'}
+                </button>
+                <button 
+                  type="submit"
+                  disabled={savingProfile}
+                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-primary to-accent text-black font-extrabold text-xs shadow-neonBlue hover:brightness-110 disabled:opacity-50"
+                >
+                  {savingProfile ? (lang === 'ru' ? 'Сохранение...' : 'Saving...') : (lang === 'ru' ? 'Сохранить' : 'Save')}
+                </button>
+              </div>
+
+            </form>
+          </div>
+        </div>
+      )}
 
     </div>
   );
