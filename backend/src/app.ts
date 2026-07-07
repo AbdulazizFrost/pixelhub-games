@@ -48,9 +48,11 @@ app.use('/uploads', express.static(uploadsPath, {
     // Add compression headers
     if (filePath.endsWith('.gz')) {
       res.setHeader('Content-Encoding', 'gzip');
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     }
     if (filePath.endsWith('.br')) {
       res.setHeader('Content-Encoding', 'br');
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     }
 
     // Set correct Content-Type for WebGL/HTML5 files

@@ -83,6 +83,63 @@ export const validateAndExtractZip = (
 
     zip.extractAllTo(extractDest, true);
 
+    // Post-extraction optimization: find and inject styles to hide the default Unity footer 
+    // and make the canvas fit 100% of the iframe fluid container!
+    try {
+      const findAndModifyStyles = (dir: string) => {
+        if (!fs.existsSync(dir)) return;
+        const files = fs.readdirSync(dir);
+        for (const file of files) {
+          const fullPath = path.join(dir, file);
+          const stat = fs.statSync(fullPath);
+          if (stat.isDirectory()) {
+            findAndModifyStyles(fullPath);
+          } else if (file === 'style.css' && fullPath.includes('TemplateData')) {
+            const customStyles = `
+/* WebGL Arcade Frame Fluid Fit Overrides */
+html, body {
+  padding: 0 !important;
+  margin: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  background: #000 !important;
+  overflow: hidden !important;
+}
+#unity-container {
+  width: 100% !important;
+  height: 100% !important;
+  position: absolute !important;
+  left: 0 !important;
+  top: 0 !important;
+  transform: none !important;
+  margin: 0 !important;
+}
+#unity-canvas {
+  width: 100% !important;
+  height: 100% !important;
+  background: #000 !important;
+  display: block !important;
+}
+#unity-footer {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+#unity-loading-bar {
+  z-index: 10 !important;
+}
+`;
+            fs.appendFileSync(fullPath, customStyles);
+          }
+        }
+      };
+      findAndModifyStyles(extractDest);
+    } catch (styleErr) {
+      console.error("Failed to inject fluid styling to extracted game:", styleErr);
+    }
+
     return { 
       isValid: true, 
       uncompressedSizeMB: parseFloat(uncompressedSizeMB.toFixed(2)) 
