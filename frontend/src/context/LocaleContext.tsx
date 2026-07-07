@@ -18,7 +18,12 @@ type TranslationKeys =
   | 'emailAddress' | 'passwordLabel' | 'loggingIn'
   | 'welcomeBack' | 'loginSubtitle'
   | 'joinEcosystem' | 'accountType' | 'player' | 'usernameLabel' | 'creatingAccount' | 'logInHere'
-  | 'viewDetails' | 'uploadYourGame' | 'exploreStore';
+  | 'viewDetails' | 'uploadYourGame' | 'exploreStore'
+  | 'discover' | 'browse' | 'news' | 'community' | 'main' | 'library' | 'favorites' | 'recent'
+  | 'playAnywhere' | 'playAnywhereSub' | 'viewAll' | 'uploadGame' | 'popularGames' | 'topDevelopers'
+  | 'follow' | 'following' | 'newsAndUpdates' | 'topPlayed' | 'communityActivity'
+  | 'noGamesUploaded' | 'noCreatorsYet' | 'noPlayStats' | 'noCommunityUpdates'
+  | 'playsCountText' | 'gamesCountText' | 'popularTab' | 'topRatedTab' | 'newTab' | 'searchGames';
 
 const translations: Record<Language, Record<TranslationKeys, string>> = {
   en: {
@@ -88,7 +93,36 @@ const translations: Record<Language, Record<TranslationKeys, string>> = {
     logInHere: "Log in here",
     viewDetails: "VIEW DETAILS",
     uploadYourGame: "UPLOAD YOUR GAME",
-    exploreStore: "EXPLORE STORE"
+    exploreStore: "EXPLORE STORE",
+    discover: "Discover",
+    browse: "Browse",
+    news: "News",
+    community: "Community",
+    main: "Main",
+    library: "Library",
+    favorites: "Favorites",
+    recent: "Recent",
+    playAnywhere: "Play Anywhere",
+    playAnywhereSub: "All games run directly in your browser. No downloads. No limits.",
+    viewAll: "View All",
+    uploadGame: "Upload Game",
+    popularGames: "Popular Games",
+    topDevelopers: "Top Developers",
+    follow: "Follow",
+    following: "Following",
+    newsAndUpdates: "News & Updates",
+    topPlayed: "Top Played",
+    communityActivity: "Community Activity",
+    noGamesUploaded: "No games uploaded yet.",
+    noCreatorsYet: "No active creators yet.",
+    noPlayStats: "No play stats logged yet.",
+    noCommunityUpdates: "No community updates.",
+    playsCountText: "plays",
+    gamesCountText: "games published",
+    popularTab: "Popular",
+    topRatedTab: "Top Rated",
+    newTab: "New",
+    searchGames: "Search games, developers..."
   },
   ru: {
     logo: "PixelHub",
@@ -157,7 +191,36 @@ const translations: Record<Language, Record<TranslationKeys, string>> = {
     logInHere: "Войти здесь",
     viewDetails: "ПОДРОБНЕЕ",
     uploadYourGame: "ОПУБЛИКОВАТЬ ИГРУ",
-    exploreStore: "ОБЗОР МАГАЗИНА"
+    exploreStore: "ОБЗОР МАГАЗИНА",
+    discover: "Обзор",
+    browse: "Просмотр",
+    news: "Новости",
+    community: "Сообщество",
+    main: "Главное",
+    library: "Библиотека",
+    favorites: "Избранное",
+    recent: "Недавнее",
+    playAnywhere: "Играй везде",
+    playAnywhereSub: "Все игры работают прямо в браузере. Без скачиваний. Без ограничений.",
+    viewAll: "Показать все",
+    uploadGame: "Загрузить игру",
+    popularGames: "Популярные игры",
+    topDevelopers: "Лучшие разработчики",
+    follow: "Подписаться",
+    following: "Вы подписаны",
+    newsAndUpdates: "Новости и обновления",
+    topPlayed: "Популярные запуски",
+    communityActivity: "Активность сообщества",
+    noGamesUploaded: "Игры еще не загружены.",
+    noCreatorsYet: "Нет активных создателей.",
+    noPlayStats: "Статистика запусков отсутствует.",
+    noCommunityUpdates: "Нет обновлений сообщества.",
+    playsCountText: "запусков",
+    gamesCountText: "игр опубликовано",
+    popularTab: "Популярное",
+    topRatedTab: "Лучшие",
+    newTab: "Новые",
+    searchGames: "Поиск игр, разработчиков..."
   }
 };
 

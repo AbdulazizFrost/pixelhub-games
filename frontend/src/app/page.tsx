@@ -38,15 +38,19 @@ interface Category {
 }
 
 export default function StoreFront() {
-  const { apiUrl, user } = useAuth();
+  const { apiUrl } = useAuth();
   const { t } = useLocale();
   
   const [games, setGames] = useState<Game[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<string>('new');
+  const [sortBy, setSortBy] = useState<string>('plays');
   const [loading, setLoading] = useState(true);
+
+  // Button interactivity states
+  const [activeFilterTab, setActiveFilterTab] = useState<'home' | 'library' | 'favorites' | 'recent'>('home');
+  const [followedDevs, setFollowedDevs] = useState<Record<string, boolean>>({});
 
   // Load Store Games
   useEffect(() => {
@@ -86,13 +90,23 @@ export default function StoreFront() {
       selectedCategory === 'all' || 
       game.category?.slug === selectedCategory;
 
-    return matchesSearch && matchesCategory;
+    // Sidebar button filters:
+    let matchesSidebarTab = true;
+    if (activeFilterTab === 'library') {
+      // Mock Library: show games that have been played by users
+      matchesSidebarTab = game.playsCount > 0;
+    } else if (activeFilterTab === 'favorites') {
+      // Mock Favorites: show highly rated games
+      matchesSidebarTab = game.ratingAverage >= 4.0;
+    }
+
+    return matchesSearch && matchesCategory && matchesSidebarTab;
   });
 
   const sortedGames = [...filteredGames].sort((a, b) => {
     if (sortBy === 'plays') return b.playsCount - a.playsCount;
     if (sortBy === 'rating') return b.ratingAverage - a.ratingAverage;
-    // default: new
+    // default/recent/new:
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
 
@@ -121,10 +135,10 @@ export default function StoreFront() {
   const communityActivities = React.useMemo(() => {
     const activities: Array<{ username: string; avatarUrl: string; actionText: string; time: string }> = [];
     const actions = [
-      { text: "unlocked achievement First Blood", type: "achievement" },
-      { text: "submitted a new high score", type: "score" },
-      { text: "liked the game build", type: "like" },
-      { text: "reviewed the release", type: "review" }
+      { text: "unlocked achievement First Blood", textRu: "разблокировал достижение Первая кровь", type: "achievement" },
+      { text: "submitted a new high score", textRu: "отправил новый рекорд", type: "score" },
+      { text: "liked the game build", textRu: "оценил сборку игры", type: "like" },
+      { text: "reviewed the release", textRu: "оставил отзыв к игре", type: "review" }
     ];
     const usersList = ["GamerOne", "RetroCoder", "ProPlayer", "PixelHunter", "GigaByte"];
 
@@ -135,13 +149,20 @@ export default function StoreFront() {
         activities.push({
           username: actUser,
           avatarUrl: `https://api.dicebear.com/7.x/bottts/svg?seed=${actUser}`,
-          actionText: `${action.text} in ${g.title}`,
+          actionText: `${t('logo') === 'PixelHub' ? action.text : action.textRu} в ${g.title}`,
           time: `${(idx + 1) * 2}h ago`
         });
       });
     }
     return activities.slice(0, 4);
-  }, [games]);
+  }, [games, t]);
+
+  const toggleFollowDev = (devUsername: string) => {
+    setFollowedDevs(prev => ({
+      ...prev,
+      [devUsername]: !prev[devUsername]
+    }));
+  };
 
   if (loading) {
     return (
@@ -159,39 +180,51 @@ export default function StoreFront() {
         
         {/* Main Section */}
         <div className="flex flex-col gap-2">
-          <span className="text-[10px] font-black uppercase tracking-wider text-mutedText px-3">Main</span>
-          <Link href="/" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-white bg-primary/10 border border-primary/20 shadow-[0_0_15px_rgba(0,240,255,0.05)] transition-all">
+          <span className="text-[10px] font-black uppercase tracking-wider text-mutedText px-3">{t('main')}</span>
+          <button 
+            onClick={() => { setActiveFilterTab('home'); setSelectedCategory('all'); }} 
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-left ${activeFilterTab === 'home' ? 'text-white bg-primary/10 border border-primary/20 shadow-[0_0_15px_rgba(0,240,255,0.05)]' : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent'}`}
+          >
             <Home className="w-4 h-4 text-primary" />
-            Home
-          </Link>
-          <button onClick={() => setSelectedCategory('all')} className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition-all text-left">
-            <Trophy className="w-4 h-4" />
-            Library
+            {t('discover')}
           </button>
-          <button className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition-all text-left">
-            <Heart className="w-4 h-4" />
-            Favorites
+          <button 
+            onClick={() => setActiveFilterTab('library')} 
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-left ${activeFilterTab === 'library' ? 'text-white bg-primary/10 border border-primary/20 shadow-[0_0_15px_rgba(0,240,255,0.05)]' : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent'}`}
+          >
+            <Trophy className="w-4 h-4 text-primary" />
+            {t('library')}
           </button>
-          <button className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition-all text-left">
-            <Clock className="w-4 h-4" />
-            Recent
+          <button 
+            onClick={() => setActiveFilterTab('favorites')} 
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-left ${activeFilterTab === 'favorites' ? 'text-white bg-primary/10 border border-primary/20 shadow-[0_0_15px_rgba(0,240,255,0.05)]' : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent'}`}
+          >
+            <Heart className="w-4 h-4 text-primary" />
+            {t('favorites')}
+          </button>
+          <button 
+            onClick={() => { setActiveFilterTab('recent'); setSortBy('new'); }} 
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-left ${activeFilterTab === 'recent' ? 'text-white bg-primary/10 border border-primary/20 shadow-[0_0_15px_rgba(0,240,255,0.05)]' : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent'}`}
+          >
+            <Clock className="w-4 h-4 text-primary" />
+            {t('recent')}
           </button>
         </div>
 
         {/* Categories Section */}
         <div className="flex flex-col gap-1">
-          <span className="text-[10px] font-black uppercase tracking-wider text-mutedText px-3 mb-1">Categories</span>
+          <span className="text-[10px] font-black uppercase tracking-wider text-mutedText px-3 mb-1">{t('categories')}</span>
           <button
-            onClick={() => setSelectedCategory('all')}
-            className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold transition-all ${selectedCategory === 'all' ? 'text-primary' : 'text-gray-400 hover:text-white'}`}
+            onClick={() => { setSelectedCategory('all'); setActiveFilterTab('home'); }}
+            className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold transition-all ${selectedCategory === 'all' && activeFilterTab === 'home' ? 'text-primary bg-white/5' : 'text-gray-400 hover:text-white'}`}
           >
-            All Genres
+            {t('allGenres')}
           </button>
           {categories.map((cat) => (
             <button
               key={cat.id}
-              onClick={() => setSelectedCategory(cat.slug)}
-              className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold transition-all ${selectedCategory === cat.slug ? 'text-primary' : 'text-gray-400 hover:text-white'}`}
+              onClick={() => { setSelectedCategory(cat.slug); setActiveFilterTab('home'); }}
+              className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold transition-all ${selectedCategory === cat.slug ? 'text-primary bg-white/5' : 'text-gray-400 hover:text-white'}`}
             >
               {cat.name}
             </button>
@@ -208,8 +241,8 @@ export default function StoreFront() {
           </div>
           
           <div>
-            <h4 className="text-xs font-extrabold text-white">Play Anywhere</h4>
-            <p className="text-[10px] text-mutedText mt-1 leading-normal">All games run directly in your browser. No downloads. No limits.</p>
+            <h4 className="text-xs font-extrabold text-white">{t('playAnywhere')}</h4>
+            <p className="text-[10px] text-mutedText mt-1 leading-normal">{t('playAnywhereSub')}</p>
           </div>
         </div>
 
@@ -218,6 +251,18 @@ export default function StoreFront() {
       {/* 2. Main Content Column Area (4 Columns Grid) */}
       <div className="xl:col-span-4 flex flex-col gap-10">
         
+        {/* Search input inside main layout */}
+        <div className="relative w-full">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-mutedText" />
+          <input 
+            type="text" 
+            placeholder={t('searchGames')}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-[#0b101c] border border-white/5 rounded-2xl py-3 pl-12 pr-4 text-xs text-gray-200 placeholder-mutedText outline-none focus:border-primary/40 focus:shadow-[0_0_15px_rgba(0,240,255,0.05)] transition-all"
+          />
+        </div>
+
         {/* Grid sub-layout: Hero (3 columns) + New Releases (1 column) */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           
@@ -229,12 +274,12 @@ export default function StoreFront() {
           {/* New Releases Sidebar Panel */}
           <div className="lg:col-span-1 flex flex-col gap-4 p-5 bg-[#0b101c] border border-white/5 rounded-2xl h-full justify-between">
             <div className="flex justify-between items-center border-b border-white/5 pb-2">
-              <span className="text-xs font-extrabold uppercase tracking-wider text-white">New Releases</span>
-              <button onClick={() => setSortBy('new')} className="text-[10px] font-bold text-primary hover:underline">View All</button>
+              <span className="text-xs font-extrabold uppercase tracking-wider text-white">{t('newReleases')}</span>
+              <button onClick={() => { setSortBy('new'); setActiveFilterTab('recent'); }} className="text-[10px] font-bold text-primary hover:underline">{t('viewAll')}</button>
             </div>
 
             {newReleases.length === 0 ? (
-              <span className="text-xs text-mutedText py-10 text-center">No games uploaded yet.</span>
+              <span className="text-xs text-mutedText py-10 text-center">{t('noGamesUploaded')}</span>
             ) : (
               <div className="flex flex-col gap-3.5 my-3">
                 {newReleases.map((g) => (
@@ -247,7 +292,7 @@ export default function StoreFront() {
                       <span className="text-[9px] text-mutedText uppercase tracking-wider block mt-0.5">{g.category?.name}</span>
                     </div>
                     <span className="text-[10px] font-black text-primary flex-shrink-0 bg-primary/5 px-2 py-1 rounded border border-primary/25 shadow-neonBlue">
-                      {g.isFree ? 'FREE' : `$${g.price}`}
+                      {g.isFree ? t('free').toUpperCase() : `$${g.price}`}
                     </span>
                   </div>
                 ))}
@@ -260,7 +305,7 @@ export default function StoreFront() {
               className="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-xl bg-primary text-black font-extrabold text-xs shadow-neonBlue hover:brightness-110 transition-all text-center uppercase tracking-wider mt-2"
             >
               <PlusCircle className="w-4 h-4 text-black" />
-              Upload Game
+              {t('uploadGame')}
             </Link>
           </div>
 
@@ -271,7 +316,7 @@ export default function StoreFront() {
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 border-b border-white/5 pb-2">
             <h2 className="text-xl font-black text-white uppercase tracking-wider flex items-center gap-2">
               <Flame className="w-5 h-5 text-secondary fill-secondary" />
-              Popular Games
+              {t('popularGames')}
             </h2>
             
             {/* Filter Tabs Panel */}
@@ -280,26 +325,26 @@ export default function StoreFront() {
                 onClick={() => setSortBy('plays')}
                 className={`px-3 py-1.5 rounded-lg text-[10px] uppercase font-bold tracking-wider transition-all ${sortBy === 'plays' ? 'bg-primary text-black font-black shadow-neonBlue' : 'text-gray-400 hover:text-white'}`}
               >
-                Popular
+                {t('popularTab')}
               </button>
               <button 
                 onClick={() => setSortBy('rating')}
                 className={`px-3 py-1.5 rounded-lg text-[10px] uppercase font-bold tracking-wider transition-all ${sortBy === 'rating' ? 'bg-primary text-black font-black shadow-neonBlue' : 'text-gray-400 hover:text-white'}`}
               >
-                Top Rated
+                {t('topRatedTab')}
               </button>
               <button 
                 onClick={() => setSortBy('new')}
                 className={`px-3 py-1.5 rounded-lg text-[10px] uppercase font-bold tracking-wider transition-all ${sortBy === 'new' ? 'bg-primary text-black font-black shadow-neonBlue' : 'text-gray-400 hover:text-white'}`}
               >
-                New
+                {t('newTab')}
               </button>
             </div>
           </div>
 
           {popularGames.length === 0 ? (
             <GlassPanel className="text-center py-20">
-              <span className="text-xs text-mutedText">No approved games available on the storefront.</span>
+              <span className="text-xs text-mutedText">{t('noGamesUploaded')}</span>
             </GlassPanel>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -318,21 +363,26 @@ export default function StoreFront() {
           
           {/* Top Developers block */}
           <div className="p-5 rounded-2xl bg-[#0b101c] border border-white/5 flex flex-col gap-4">
-            <span className="text-xs font-black uppercase tracking-wider text-mutedText border-b border-white/5 pb-2 block">Top Developers</span>
+            <span className="text-xs font-black uppercase tracking-wider text-mutedText border-b border-white/5 pb-2 block">{t('topDevelopers')}</span>
             {topDevelopers.length === 0 ? (
-              <span className="text-[10px] text-mutedText py-6 text-center block">No active creators yet.</span>
+              <span className="text-[10px] text-mutedText py-6 text-center block">{t('noCreatorsYet')}</span>
             ) : (
               <div className="flex flex-col gap-3">
                 {topDevelopers.map((dev, idx) => (
                   <div key={idx} className="flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
-                      <img src={dev.avatarUrl} alt="dev avatar" className="w-7 h-7 rounded-lg bg-black/40" />
+                      <img src={dev.avatarUrl} alt="dev avatar" className="w-7 h-7 rounded-lg bg-black/40 animate-pulse" />
                       <div className="flex flex-col">
                         <span className="text-xs font-bold text-gray-200">{dev.username}</span>
-                        <span className="text-[9px] text-mutedText">{dev.gamesCount} games published</span>
+                        <span className="text-[9px] text-mutedText">{dev.gamesCount} {t('gamesCountText')}</span>
                       </div>
                     </div>
-                    <button className="text-[9px] font-bold px-2 py-1 rounded bg-primary/5 text-primary border border-primary/20 hover:bg-primary/10 transition-all">Follow</button>
+                    <button 
+                      onClick={() => toggleFollowDev(dev.username)}
+                      className={`text-[9px] font-bold px-2 py-1 rounded transition-all ${followedDevs[dev.username] ? 'bg-primary text-black shadow-neonBlue' : 'bg-primary/5 text-primary border border-primary/20 hover:bg-primary/10'}`}
+                    >
+                      {followedDevs[dev.username] ? t('following') : t('follow')}
+                    </button>
                   </div>
                 ))}
               </div>
@@ -341,7 +391,7 @@ export default function StoreFront() {
 
           {/* News & Updates block */}
           <div className="p-5 rounded-2xl bg-[#0b101c] border border-white/5 flex flex-col gap-4">
-            <span className="text-xs font-black uppercase tracking-wider text-mutedText border-b border-white/5 pb-2 block">News & Updates</span>
+            <span className="text-xs font-black uppercase tracking-wider text-mutedText border-b border-white/5 pb-2 block">{t('newsAndUpdates')}</span>
             
             <div className="flex flex-col gap-3">
               <div className="rounded-lg overflow-hidden bg-black/40 border border-white/5 p-2">
@@ -359,9 +409,9 @@ export default function StoreFront() {
 
           {/* Top Played block */}
           <div className="p-5 rounded-2xl bg-[#0b101c] border border-white/5 flex flex-col gap-4">
-            <span className="text-xs font-black uppercase tracking-wider text-mutedText border-b border-white/5 pb-2 block">Top Played</span>
+            <span className="text-xs font-black uppercase tracking-wider text-mutedText border-b border-white/5 pb-2 block">{t('topPlayed')}</span>
             {topPlayed.length === 0 ? (
-              <span className="text-[10px] text-mutedText py-6 text-center block">No play stats logged yet.</span>
+              <span className="text-[10px] text-mutedText py-6 text-center block">{t('noPlayStats')}</span>
             ) : (
               <div className="flex flex-col gap-3">
                 {topPlayed.map((g, idx) => (
@@ -374,7 +424,7 @@ export default function StoreFront() {
                         <span className="text-[9px] text-mutedText uppercase tracking-wider">{g.category?.name}</span>
                       </div>
                     </div>
-                    <span className="text-[9px] font-black text-gray-400">{g.playsCount > 1000 ? `${(g.playsCount / 1000).toFixed(1)}k` : g.playsCount} plays</span>
+                    <span className="text-[9px] font-black text-gray-400">{g.playsCount > 1000 ? `${(g.playsCount / 1000).toFixed(1)}k` : g.playsCount} {t('playsCountText')}</span>
                   </div>
                 ))}
               </div>
@@ -383,9 +433,9 @@ export default function StoreFront() {
 
           {/* Community Activity block */}
           <div className="p-5 rounded-2xl bg-[#0b101c] border border-white/5 flex flex-col gap-4">
-            <span className="text-xs font-black uppercase tracking-wider text-mutedText border-b border-white/5 pb-2 block">Community Activity</span>
+            <span className="text-xs font-black uppercase tracking-wider text-mutedText border-b border-white/5 pb-2 block">{t('communityActivity')}</span>
             {communityActivities.length === 0 ? (
-              <span className="text-[10px] text-mutedText py-6 text-center block">No community updates.</span>
+              <span className="text-[10px] text-mutedText py-6 text-center block">{t('noCommunityUpdates')}</span>
             ) : (
               <div className="flex flex-col gap-3">
                 {communityActivities.map((act, idx) => (
