@@ -53,9 +53,11 @@ export default function Navbar() {
         <div className="flex items-center gap-8">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="p-2 rounded-xl bg-gradient-to-r from-primary to-accent shadow-neonBlue transition-all duration-300 group-hover:scale-105">
-              <Gamepad2 className="w-5 h-5 text-black" />
-            </div>
+            <img 
+              src="/logo.png" 
+              alt="PixelHub Logo" 
+              className="w-9 h-9 object-contain transition-all duration-300 group-hover:scale-105"
+            />
             <span className="font-black tracking-widest text-lg text-white uppercase font-sans">
               PixelHub
             </span>
